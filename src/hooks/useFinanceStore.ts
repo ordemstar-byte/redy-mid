@@ -10,12 +10,16 @@ const STORAGE_KEYS = {
   PRIVACY: 'aegis_finance_privacy_mode',
   PERIOD: 'aegis_finance_period_filter',
   TAB: 'aegis_finance_active_tab',
-  THEME: 'aegis_finance_theme',
+  THEME: 'aegis_finance_theme_v2',
 }
 
 export function useFinanceStore() {
   // Tema Claro por padrão (conforme pedido pelo usuário)
   const [theme, setTheme] = useState<AppTheme>(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.remove('dark')
+      document.documentElement.classList.add('light')
+    }
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.THEME) as AppTheme
       if (saved === 'dark' || saved === 'light') return saved
