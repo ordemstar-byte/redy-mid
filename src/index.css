@@ -94,3 +94,84 @@
   animation: shake 0.4s ease-in-out;
 }
 
+/* Custom Fintech Range Slider (iOS / WebKit / Firefox normalization) */
+.fintech-range-slider {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+}
+
+.fintech-range-slider:focus {
+  outline: none;
+}
+
+/* Track styling for Webkit */
+.fintech-range-slider::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+}
+
+/* Thumb styling for Webkit */
+.fintech-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 22px;
+  width: 22px;
+  border-radius: 50%;
+  background: #10B981;
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25), 0 0 10px rgba(16, 185, 129, 0.5);
+  margin-top: -7px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+html.dark .fintech-range-slider::-webkit-slider-thumb {
+  border: 3px solid #18181B;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.6), 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.fintech-range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.18);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.7);
+}
+
+.fintech-range-slider::-webkit-slider-thumb:active {
+  transform: scale(1.25);
+}
+
+/* Track styling for Firefox */
+.fintech-range-slider::-moz-range-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+}
+
+/* Thumb styling for Firefox */
+.fintech-range-slider::-moz-range-thumb {
+  height: 22px;
+  width: 22px;
+  border-radius: 50%;
+  background: #10B981;
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+html.dark .fintech-range-slider::-moz-range-thumb {
+  border: 3px solid #18181B;
+}
+
