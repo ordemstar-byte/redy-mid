@@ -1,0 +1,358 @@
+import { useState } from 'react'
+import type { DetailedBankAccount, Transaction } from '../types'
+import { formatCurrency, formatDateBR } from '../lib/utils'
+import {
+  Landmark,
+  Plus,
+  ArrowUpRight,
+  ArrowDownRight,
+  Trash2,
+  CheckCircle2,
+  Clock,
+  Sparkles,
+  TrendingUp,
+} from 'lucide-react'
+
+interface BankAccountsViewProps {
+  detailedAccounts: DetailedBankAccount[]
+  transactions: Transaction[]
+  summary: {
+    totalCurrentBalance: number
+    totalIncomes: number
+    totalExpenses: number
+    totalPendingIncomes: number
+    totalPendingExpenses: number
+    accountsCount: number
+  }
+  privacyMode: boolean
+  onOpenNewAccount: () => void
+  onOpenNewTransaction: () => void
+  onDeleteAccount: (id: string) => void
+  onDeleteTransaction: (id: string) => void
+  onToggleStatus: (id: string) => void
+}
+
+export function BankAccountsView({
+  detailedAccounts,
+  transactions,
+  summary,
+  privacyMode,
+  onOpenNewAccount,
+  onOpenNewTransaction,
+  onDeleteAccount,
+  onDeleteTransaction,
+  onToggleStatus,
+}: BankAccountsViewProps) {
+  const [selectedAccountId, setSelectedAccountId] = useState<string>(() => {
+    return detailedAccounts[0]?.id || ''
+  })
+
+  const activeAccount = detailedAccounts.find((a) => a.id === selectedAccountId) || detailedAccounts[0]
+
+  // Transações associadas a esta conta bancária
+  const accountTransactions = transactions
+    .filter((tx) => tx.bankAccountId === activeAccount?.id)
+    .sort((a, b) => (b.dueDate || b.date).localeCompare(a.dueDate || a.date))
+
+  const accountTypeLabels: Record<string, string> = {
+    checking: 'Conta Corrente',
+    investment: 'Investimentos',
+    savings: 'Reserva / Poupança',
+    cash: 'Dinheiro em Espécie',
+  }
+
+  if (detailedAccounts.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-800 p-12 text-center bg-white dark:bg-zinc-900/40 shadow-sm">
+        <Landmark className="w-12 h-12 text-zinc-400 dark:text-zinc-600 mx-auto mb-4" />
+        <h3 className="text-base font-semibold text-zinc-800 dark:text-zinc-200">
+          Nenhuma conta bancária cadastrada
+        </h3>
+        <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1 mb-6">
+          Cadastre suas contas no Itaú, BTG, Nubank, Bradesco, etc., para conciliar saldos reais e extratos.
+        </p>
+        <button
+          onClick={onOpenNewAccount}
+          className="px-4 py-2.5 rounded-xl bg-emerald-500 text-zinc-950 font-semibold text-xs inline-flex items-center gap-2 hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
+        >
+          <Plus className="w-4 h-4 stroke-[2.5]" />
+          <span>Cadastrar Primeira Conta</span>
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-8">
+      
+      {/* Top Consolidator Metrics Bar */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        {/* Total Bank Balance */}
+        <div className="rounded-2xl p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm">
+          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-xs mb-1">
+            <span className="font-medium">Saldo Consolidado em Contas</span>
+            <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <Sparkles className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold font-mono-numbers text-zinc-900 dark:text-white">
+            {formatCurrency(summary.totalCurrentBalance, privacyMode)}
+          </div>
+          <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+            Soma de {summary.accountsCount} contas bancárias ativas
+          </div>
+        </div>
+
+        {/* Total Incomes in Accounts */}
+        <div className="rounded-2xl p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm">
+          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-xs mb-1">
+            <span className="font-medium">Entradas Creditadas</span>
+            <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <ArrowUpRight className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold font-mono-numbers text-emerald-600 dark:text-emerald-400">
+            +{formatCurrency(summary.totalIncomes, privacyMode)}
+          </div>
+          <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+            Transferências e recebimentos já liquidados
+          </div>
+        </div>
+
+        {/* Total Expenses Debited */}
+        <div className="rounded-2xl p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm">
+          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-xs mb-1">
+            <span className="font-medium">Saídas Debitadas</span>
+            <div className="w-6 h-6 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+              <ArrowDownRight className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold font-mono-numbers text-zinc-800 dark:text-zinc-200">
+            -{formatCurrency(summary.totalExpenses, privacyMode)}
+          </div>
+          <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+            Pagamentos e transferências liquidadas
+          </div>
+        </div>
+
+        {/* Net Ratio */}
+        <div className="rounded-2xl p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm">
+          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-xs mb-1">
+            <span className="font-medium">Resultado Bancário Líquido</span>
+            <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold font-mono-numbers text-zinc-900 dark:text-white">
+            {formatCurrency(summary.totalIncomes - summary.totalExpenses, privacyMode)}
+          </div>
+          <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+            Fluxo líquido movimentado no período
+          </div>
+        </div>
+
+      </div>
+
+      {/* Grid of Bank Accounts Cards */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xs uppercase tracking-wider font-bold text-zinc-900 dark:text-white">
+              Suas Contas Bancárias
+            </h2>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Selecione uma conta para auditar extratos, saldos e movimentações
+            </p>
+          </div>
+          <button
+            onClick={onOpenNewAccount}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-zinc-700 dark:text-zinc-200 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all shadow-sm"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Nova Conta</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {detailedAccounts.map((account) => {
+            const isSelected = activeAccount?.id === account.id
+            return (
+              <div
+                key={account.id}
+                onClick={() => setSelectedAccountId(account.id)}
+                className={`relative rounded-2xl p-5 bg-white dark:bg-zinc-900 border transition-all duration-200 cursor-pointer shadow-sm select-none ${
+                  isSelected
+                    ? 'ring-2 ring-emerald-500 border-emerald-500/50 shadow-md scale-[1.01]'
+                    : 'border-zinc-200/90 dark:border-zinc-800/90 hover:border-zinc-300 dark:hover:border-zinc-700 hover:scale-[1.005]'
+                }`}
+              >
+                {/* Brand color stripe */}
+                <div
+                  className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
+                  style={{ backgroundColor: account.color }}
+                />
+
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-zinc-400 block">
+                      {account.bank}
+                    </span>
+                    <h3 className="text-sm font-bold text-zinc-900 dark:text-white leading-snug">
+                      {account.name}
+                    </h3>
+                  </div>
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700/60 shrink-0">
+                    {accountTypeLabels[account.accountType] || 'Conta'}
+                  </span>
+                </div>
+
+                {/* Saldo Atual */}
+                <div className="my-3">
+                  <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block">
+                    Saldo Disponível
+                  </span>
+                  <div className="text-xl font-bold font-mono-numbers text-zinc-900 dark:text-white">
+                    {formatCurrency(account.currentBalance, privacyMode)}
+                  </div>
+                </div>
+
+                {/* Detalhes de Agência e Movimentações */}
+                <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400">
+                  <span>
+                    {account.agency && account.accountNumber
+                      ? `Ag ${account.agency} • Cc ${account.accountNumber}`
+                      : `${account.transactionsCount} lançamentos`}
+                  </span>
+                  <span className="font-mono-numbers text-[10px] text-zinc-400">
+                    Inicial: {formatCurrency(account.initialBalance, privacyMode)}
+                  </span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Extrato Detalhado da Conta Ativa */}
+      {activeAccount && (
+        <div className="rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800/80 p-6 shadow-sm backdrop-blur-sm space-y-5">
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs uppercase tracking-wider font-semibold text-emerald-600 dark:text-emerald-400">
+                  Extrato da Conta
+                </span>
+                <span className="text-zinc-400">•</span>
+                <span className="text-xs text-zinc-500">{activeAccount.bank}</span>
+              </div>
+              <h3 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-3">
+                <span>{activeAccount.name}</span>
+                <span className="text-sm font-bold font-mono-numbers text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800/40">
+                  {formatCurrency(activeAccount.currentBalance, privacyMode)}
+                </span>
+              </h3>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onOpenNewTransaction}
+                className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs transition-all shadow-md flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>+ Lançamento Nesta Conta</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  if (confirm(`Deseja realmente remover a conta ${activeAccount.name}?`)) {
+                    onDeleteAccount(activeAccount.id)
+                  }
+                }}
+                className="p-2 rounded-xl text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                title="Excluir esta conta"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Lista de Movimentações */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              Movimentações Registradas ({accountTransactions.length})
+            </h4>
+
+            {accountTransactions.length > 0 ? (
+              <div className="divide-y divide-zinc-100 dark:divide-zinc-800/80 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden bg-zinc-50/50 dark:bg-zinc-950/40">
+                {accountTransactions.map((tx) => {
+                  const isIncome = tx.type === 'income'
+                  const isPaid = tx.status === 'paid'
+                  return (
+                    <div
+                      key={tx.id}
+                      className="p-3.5 flex items-center justify-between hover:bg-white dark:hover:bg-zinc-900/50 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => onToggleStatus(tx.id)}
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
+                            isPaid
+                              ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                              : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-500'
+                          }`}
+                        >
+                          {isPaid ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                        </button>
+                        <div>
+                          <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-200 group-hover:text-black dark:group-hover:text-white">
+                            {tx.description}
+                          </div>
+                          <div className="text-[11px] text-zinc-500 flex items-center gap-2 mt-0.5">
+                            <span>{tx.category}</span>
+                            <span>•</span>
+                            <span>{formatDateBR(tx.dueDate || tx.date)}</span>
+                            {tx.notes && <span>• {tx.notes}</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <div
+                            className={`font-mono-numbers font-semibold text-xs ${
+                              isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-900 dark:text-zinc-200'
+                            }`}
+                          >
+                            {isIncome ? '+' : '-'}{formatCurrency(tx.amount, privacyMode)}
+                          </div>
+                          <div className="text-[10px] text-zinc-400">
+                            {isPaid ? 'Liquidado' : 'Pendente'}
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => onDeleteTransaction(tx.id)}
+                          className="p-1 rounded text-zinc-400 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="py-10 text-center text-zinc-400 dark:text-zinc-500 text-xs border border-zinc-200 dark:border-zinc-800/60 rounded-xl bg-white dark:bg-transparent">
+                Nenhuma movimentação associada a esta conta bancária ainda.
+              </div>
+            )}
+          </div>
+
+        </div>
+      )}
+
+    </div>
+  )
+}
