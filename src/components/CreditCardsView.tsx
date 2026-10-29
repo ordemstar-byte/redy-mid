@@ -357,7 +357,7 @@ export function CreditCardsView({
                         <div className="text-[11px] text-zinc-500 flex items-center gap-2 mt-0.5">
                           <span>{tx.category}</span>
                           <span>•</span>
-                          <span>Data da compra: {formatDateBR(tx.date)}</span>
+                          <span>Compra: {formatDateBR(tx.date)}{tx.time ? ` às ${tx.time}` : ''}</span>
                           {tx.installmentsTotal && tx.installmentsTotal > 1 && (
                             <span className="px-1.5 py-0.2 rounded bg-purple-100 dark:bg-purple-500/10 text-purple-700 dark:text-purple-300 font-mono-numbers text-[10px]">
                               Parcela {tx.installmentNumber} de {tx.installmentsTotal}

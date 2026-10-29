@@ -310,9 +310,13 @@ export function BankAccountsView({
                             {tx.description}
                           </div>
                           <div className="text-[11px] text-zinc-500 flex items-center gap-2 mt-0.5">
+                            <span className="font-semibold text-zinc-700 dark:text-zinc-300">
+                              {tx.paymentMethod === 'pix' ? 'PIX' : 'TED / Conta'}
+                            </span>
+                            <span>•</span>
                             <span>{tx.category}</span>
                             <span>•</span>
-                            <span>{formatDateBR(tx.dueDate || tx.date)}</span>
+                            <span>{formatDateBR(tx.date)}{tx.time ? ` às ${tx.time}` : ''}</span>
                             {tx.notes && <span>• {tx.notes}</span>}
                           </div>
                         </div>

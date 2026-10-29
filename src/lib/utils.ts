@@ -42,6 +42,15 @@ export function formatDateBR(isoDate: string): string {
 }
 
 /**
+ * Formata data e horário no padrão PT-BR (DD/MM/AAAA às HH:mm)
+ */
+export function formatDateTimeBR(isoDate: string, time?: string): string {
+  const dateFormatted = formatDateBR(isoDate)
+  if (!time) return dateFormatted
+  return `${dateFormatted} às ${time}`
+}
+
+/**
  * Retorna nome abreviado do dia da semana e dia
  */
 export function formatDayMonth(isoDate: string): string {

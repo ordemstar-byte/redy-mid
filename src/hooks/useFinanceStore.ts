@@ -217,6 +217,7 @@ export function useFinanceStore() {
             category: data.category,
             categoryGroup: data.categoryGroup,
             date: instDateStr,
+            time: data.time || undefined,
             dueDate: dueDate,
             status: i === 1 && data.status === 'paid' ? 'paid' : 'pending',
             notes: data.notes,

@@ -331,11 +331,20 @@ export function CashFlowView({
                         </span>
                       </td>
 
-                      {/* Data / Efetivação */}
+                      {/* Data / Horário / Efetivação */}
                       <td className="py-3 px-3 font-mono-numbers text-[11px] text-zinc-600 dark:text-zinc-400">
-                        <div>{formatDateBR(tx.dueDate || tx.date)}</div>
+                        <div className="flex items-center gap-1.5 font-medium text-zinc-800 dark:text-zinc-200">
+                          <span>{formatDateBR(tx.date)}</span>
+                          {tx.time && (
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-semibold border border-zinc-200 dark:border-zinc-700/60">
+                              {tx.time}
+                            </span>
+                          )}
+                        </div>
                         {tx.dueDate && tx.dueDate !== tx.date && (
-                          <div className="text-[10px] text-zinc-400">Compra: {formatDateBR(tx.date)}</div>
+                          <div className="text-[10px] text-zinc-400 mt-0.5">
+                            Fatura / Liq: {formatDateBR(tx.dueDate)}
+                          </div>
                         )}
                       </td>
 

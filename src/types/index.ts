@@ -62,6 +62,7 @@ export interface Transaction {
   category: string
   categoryGroup: CategoryGroup
   date: string // YYYY-MM-DD da compra/registro
+  time?: string // HH:mm do momento da transação (ex: 14:32)
   dueDate: string // YYYY-MM-DD da efetivação no fluxo de caixa (se cartão, vencimento da fatura)
   status: TransactionStatus
   notes?: string

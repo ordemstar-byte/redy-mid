@@ -19,7 +19,9 @@ export function NewTransactionModal({
   accounts,
   onSave,
 }: NewTransactionModalProps) {
-  const todayStr = new Date().toISOString().split('T')[0]
+  const now = new Date()
+  const todayStr = now.toISOString().split('T')[0]
+  const defaultTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 
   const [type, setType] = useState<TransactionType>('expense')
   const [description, setDescription] = useState('')
@@ -31,6 +33,7 @@ export function NewTransactionModal({
   const [installmentsTotal, setInstallmentsTotal] = useState<number>(1)
   const [generateAllInstallments, setGenerateAllInstallments] = useState(true)
   const [date, setDate] = useState(todayStr)
+  const [time, setTime] = useState(defaultTime)
   const [status, setStatus] = useState<'paid' | 'pending'>('pending')
   const [notes, setNotes] = useState('')
 
@@ -69,6 +72,7 @@ export function NewTransactionModal({
         category,
         categoryGroup,
         date,
+        time: time || undefined,
         dueDate: estimatedDueDate,
         status,
         notes: notes.trim() || undefined,
@@ -292,8 +296,8 @@ export function NewTransactionModal({
             </div>
           )}
 
-          {/* Categoria e Datas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Categoria, Data e Horário */}
+          <div className="space-y-3">
             <div>
               <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Categoria</label>
               <select
@@ -309,16 +313,32 @@ export function NewTransactionModal({
               </select>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
-                Data do Registro / Compra
-              </label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-zinc-50 dark:bg-zinc-950 text-xs font-mono-numbers text-zinc-900 dark:text-zinc-200 px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                  Data da Operação
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full bg-zinc-50 dark:bg-zinc-950 text-xs font-mono-numbers text-zinc-900 dark:text-zinc-200 px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                  Horário (HH:mm)
+                </label>
+                <input
+                  type="time"
+                  required
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  className="w-full bg-zinc-50 dark:bg-zinc-950 text-xs font-mono-numbers text-zinc-900 dark:text-zinc-200 px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
             </div>
           </div>
 

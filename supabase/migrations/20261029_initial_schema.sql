@@ -99,6 +99,7 @@ CREATE TABLE IF NOT EXISTS public.transactions (
     category TEXT NOT NULL,
     category_group TEXT NOT NULL,
     date DATE NOT NULL,
+    time TEXT DEFAULT '12:00',
     due_date DATE NOT NULL,
     status TEXT NOT NULL CHECK (status IN ('paid', 'pending')),
     notes TEXT,
