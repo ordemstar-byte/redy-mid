@@ -38,6 +38,9 @@ interface HeaderProps {
   onImportBackup: (jsonStr: string) => void
   onResetData: () => void
   onLockApp?: () => void
+  isSyncing?: boolean
+  isCloudConnected?: boolean
+  onReloadCloud?: () => void
   totalCardsCount: number
   totalAccountsCount: number
   pendingTxCount: number
@@ -59,6 +62,9 @@ export function Header({
   onImportBackup,
   onResetData,
   onLockApp,
+  isSyncing = false,
+  isCloudConnected = true,
+  onReloadCloud,
   totalCardsCount,
   totalAccountsCount,
   pendingTxCount,
@@ -225,6 +231,33 @@ export function Header({
               <ChevronDown className="w-3 h-3 text-zinc-400 absolute right-1.5 sm:right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
 
+            {/* Cloud Sync Status Indicator */}
+            <button
+              type="button"
+              onClick={onReloadCloud}
+              title={
+                isSyncing
+                  ? 'Sincronizando com Supabase...'
+                  : isCloudConnected
+                  ? 'Conectado à nuvem Supabase (Clique para atualizar)'
+                  : 'Modo local (Offline)'
+              }
+              className="flex items-center gap-1.5 px-2 py-1.5 sm:py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-[10px] sm:text-xs font-semibold text-zinc-700 dark:text-zinc-300 transition-all shadow-sm hover:border-emerald-500/40"
+            >
+              <span
+                className={`w-2 h-2 rounded-full shrink-0 ${
+                  isSyncing
+                    ? 'bg-amber-400 animate-ping'
+                    : isCloudConnected
+                    ? 'bg-emerald-500 ring-2 ring-emerald-500/30'
+                    : 'bg-zinc-400'
+                }`}
+              />
+              <span className="hidden sm:inline">
+                {isSyncing ? 'Salvando...' : 'Nuvem'}
+              </span>
+            </button>
+
             {/* Lock App Button */}
             {onLockApp && (
               <button
@@ -288,6 +321,38 @@ export function Header({
                     onClick={() => setShowDataMenu(false)}
                   />
                   <div className="absolute right-0 mt-2 w-64 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl py-1 z-50 text-xs text-zinc-700 dark:text-zinc-300">
+                    
+                    {/* Status da Nuvem Supabase */}
+                    <div className="px-3 py-2 bg-zinc-50 dark:bg-zinc-950/60 rounded-lg mx-2 my-1 border border-zinc-200 dark:border-zinc-800/80">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                          Nuvem Supabase
+                        </span>
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                          Conectado
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        Dados salvos permanentemente no banco. Só são excluídos quando você exclui.
+                      </p>
+                      {onReloadCloud && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onReloadCloud()
+                            setShowDataMenu(false)
+                          }}
+                          className="mt-2 w-full py-1 rounded bg-zinc-200 dark:bg-zinc-800 hover:bg-emerald-500 hover:text-zinc-950 text-zinc-800 dark:text-zinc-200 text-[10px] font-semibold transition-colors flex items-center justify-center gap-1"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          Sincronizar com Nuvem Agora
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="border-t border-zinc-200 dark:border-zinc-800 my-1" />
+
                     <button
                       onClick={() => {
                         setShowDataMenu(false)

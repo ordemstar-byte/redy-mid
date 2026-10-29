@@ -2,6 +2,22 @@ import { useState, useEffect, useCallback } from 'react'
 import type { CreditCard, Transaction, BankAccount, PeriodFilter, AppTab, AppTheme } from '../types'
 import { INITIAL_CARDS, INITIAL_ACCOUNTS, generateInitialTransactions } from '../lib/constants'
 import { calculateInvoiceDueDate } from '../lib/utils'
+import {
+  fetchAccountsFromSupabase,
+  saveAccountToSupabase,
+  updateAccountInSupabase,
+  deleteAccountFromSupabase,
+  fetchCardsFromSupabase,
+  saveCardToSupabase,
+  updateCardInSupabase,
+  deleteCardFromSupabase,
+  fetchTransactionsFromSupabase,
+  saveTransactionToSupabase,
+  saveTransactionsBatchToSupabase,
+  updateTransactionInSupabase,
+  deleteTransactionFromSupabase,
+} from '../services/supabaseService'
+import { isSupabaseConfigured } from '../lib/supabase'
 
 const STORAGE_KEYS = {
   CARDS: 'aegis_finance_cards_prod_v2',
@@ -13,21 +29,11 @@ const STORAGE_KEYS = {
   THEME: 'aegis_finance_theme_v2',
 }
 
-// Limpeza única de dados legados de demonstração
-if (typeof window !== 'undefined') {
-  try {
-    if (localStorage.getItem('aegis_prod_clean_done_v2') !== 'true') {
-      localStorage.removeItem('aegis_finance_cards_v1')
-      localStorage.removeItem('aegis_finance_accounts_v1')
-      localStorage.removeItem('aegis_finance_transactions_v1')
-      localStorage.setItem('aegis_prod_clean_done_v2', 'true')
-    }
-  } catch {
-    // Ignore storage errors
-  }
-}
-
 export function useFinanceStore() {
+  // Estado de sincronização com a nuvem Supabase
+  const [isSyncing, setIsSyncing] = useState<boolean>(true)
+  const [isCloudConnected, setIsCloudConnected] = useState<boolean>(isSupabaseConfigured)
+
   // Tema Claro por padrão (conforme pedido pelo usuário)
   const [theme, setTheme] = useState<AppTheme>(() => {
     if (typeof document !== 'undefined') {
@@ -55,7 +61,7 @@ export function useFinanceStore() {
     localStorage.setItem(STORAGE_KEYS.THEME, theme)
   }, [theme])
 
-  // Contas Bancárias
+  // Contas Bancárias: Inicia com LocalStorage para render imediato e depois sincroniza com Supabase
   const [accounts, setAccounts] = useState<BankAccount[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.ACCOUNTS)
@@ -117,7 +123,96 @@ export function useFinanceStore() {
     return 'cashflow'
   })
 
-  // Sincronização automática com localStorage
+  // Sincronização de inicialização com Supabase (Fonte da Verdade)
+  useEffect(() => {
+    let isMounted = true
+
+    async function initialCloudSync() {
+      setIsSyncing(true)
+      try {
+        const [remoteAccounts, remoteCards, remoteTxs] = await Promise.all([
+          fetchAccountsFromSupabase(),
+          fetchCardsFromSupabase(),
+          fetchTransactionsFromSupabase(),
+        ])
+
+        if (!isMounted) return
+
+        // 1. Contas: Se existirem no Supabase, são a verdade. Senão, envia as locais.
+        if (remoteAccounts.length > 0) {
+          setAccounts(remoteAccounts)
+          localStorage.setItem(STORAGE_KEYS.ACCOUNTS, JSON.stringify(remoteAccounts))
+        } else {
+          const localStr = localStorage.getItem(STORAGE_KEYS.ACCOUNTS)
+          if (localStr) {
+            try {
+              const localParsed: BankAccount[] = JSON.parse(localStr)
+              if (localParsed.length > 0) {
+                for (const acc of localParsed) {
+                  await saveAccountToSupabase(acc)
+                }
+              }
+            } catch {
+              // ignore
+            }
+          }
+        }
+
+        // 2. Cartões: Se existirem no Supabase, sincroniza. Senão envia os locais.
+        if (remoteCards.length > 0) {
+          setCards(remoteCards)
+          localStorage.setItem(STORAGE_KEYS.CARDS, JSON.stringify(remoteCards))
+        } else {
+          const localStr = localStorage.getItem(STORAGE_KEYS.CARDS)
+          if (localStr) {
+            try {
+              const localParsed: CreditCard[] = JSON.parse(localStr)
+              if (localParsed.length > 0) {
+                for (const c of localParsed) {
+                  await saveCardToSupabase(c)
+                }
+              }
+            } catch {
+              // ignore
+            }
+          }
+        }
+
+        // 3. Transações: Se existirem no Supabase, sincroniza. Senão envia as locais.
+        if (remoteTxs.length > 0) {
+          setTransactions(remoteTxs)
+          localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(remoteTxs))
+        } else {
+          const localStr = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS)
+          if (localStr) {
+            try {
+              const localParsed: Transaction[] = JSON.parse(localStr)
+              if (localParsed.length > 0) {
+                await saveTransactionsBatchToSupabase(localParsed)
+              }
+            } catch {
+              // ignore
+            }
+          }
+        }
+
+        setIsCloudConnected(true)
+      } catch (err) {
+        console.error('Erro na sincronização inicial do Supabase:', err)
+        setIsCloudConnected(false)
+      } finally {
+        if (isMounted) setIsSyncing(false)
+      }
+    }
+
+    initialCloudSync()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  // Sincronização automática com localStorage para cache offline
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.ACCOUNTS, JSON.stringify(accounts))
   }, [accounts])
@@ -142,7 +237,7 @@ export function useFinanceStore() {
     localStorage.setItem(STORAGE_KEYS.TAB, activeTab)
   }, [activeTab])
 
-  // Ações de Contas Bancárias
+  // Ações de Contas Bancárias (Persistidas no Supabase)
   const addAccount = useCallback((accountData: Omit<BankAccount, 'id' | 'createdAt'>) => {
     const newAccount: BankAccount = {
       ...accountData,
@@ -150,6 +245,8 @@ export function useFinanceStore() {
       createdAt: new Date().toISOString(),
     }
     setAccounts((prev) => [newAccount, ...prev])
+    // Salva permanentemente no Supabase
+    saveAccountToSupabase(newAccount)
     return newAccount
   }, [])
 
@@ -157,13 +254,17 @@ export function useFinanceStore() {
     setAccounts((prev) =>
       prev.map((acc) => (acc.id === id ? { ...acc, ...updates } : acc))
     )
+    // Atualiza permanentemente no Supabase
+    updateAccountInSupabase(id, updates)
   }, [])
 
   const deleteAccount = useCallback((id: string) => {
     setAccounts((prev) => prev.filter((acc) => acc.id !== id))
+    // Exclui do banco SOMENTE quando o usuário aciona
+    deleteAccountFromSupabase(id)
   }, [])
 
-  // Ações de Cartões
+  // Ações de Cartões (Persistidas no Supabase)
   const addCard = useCallback((cardData: Omit<CreditCard, 'id' | 'createdAt'>) => {
     const newCard: CreditCard = {
       ...cardData,
@@ -171,6 +272,8 @@ export function useFinanceStore() {
       createdAt: new Date().toISOString(),
     }
     setCards((prev) => [newCard, ...prev])
+    // Salva permanentemente no Supabase
+    saveCardToSupabase(newCard)
     return newCard
   }, [])
 
@@ -178,13 +281,17 @@ export function useFinanceStore() {
     setCards((prev) =>
       prev.map((card) => (card.id === id ? { ...card, ...updates } : card))
     )
+    // Atualiza permanentemente no Supabase
+    updateCardInSupabase(id, updates)
   }, [])
 
   const deleteCard = useCallback((id: string) => {
     setCards((prev) => prev.filter((card) => card.id !== id))
+    // Exclui do banco SOMENTE quando o usuário aciona
+    deleteCardFromSupabase(id)
   }, [])
 
-  // Ações de Transações & Parcelamento Inteligente
+  // Ações de Transações & Parcelamento Inteligente (Persistidas no Supabase)
   const addTransaction = useCallback(
     (
       data: Omit<Transaction, 'id' | 'createdAt'>,
@@ -246,6 +353,8 @@ export function useFinanceStore() {
         }
 
         setTransactions((prev) => [...newTransactions, ...prev])
+        // Salva lote no Supabase
+        saveTransactionsBatchToSupabase(newTransactions)
         return newTransactions
       }
 
@@ -268,6 +377,8 @@ export function useFinanceStore() {
       }
 
       setTransactions((prev) => [newTx, ...prev])
+      // Salva no Supabase
+      saveTransactionToSupabase(newTx)
       return [newTx]
     },
     [cards]
@@ -278,22 +389,30 @@ export function useFinanceStore() {
       setTransactions((prev) =>
         prev.map((tx) => (tx.id === id ? { ...tx, ...updates } : tx))
       )
+      updateTransactionInSupabase(id, updates)
     },
     []
   )
 
   const deleteTransaction = useCallback((id: string) => {
     setTransactions((prev) => prev.filter((tx) => tx.id !== id))
+    // Exclui do banco SOMENTE quando o usuário aciona
+    deleteTransactionFromSupabase(id)
   }, [])
 
   const toggleTransactionStatus = useCallback((id: string) => {
-    setTransactions((prev) =>
-      prev.map((tx) =>
+    setTransactions((prev) => {
+      const target = prev.find((tx) => tx.id === id)
+      if (target) {
+        const newStatus = target.status === 'paid' ? 'pending' : 'paid'
+        updateTransactionInSupabase(id, { status: newStatus })
+      }
+      return prev.map((tx) =>
         tx.id === id
           ? { ...tx, status: tx.status === 'paid' ? 'pending' : 'paid' }
           : tx
       )
-    )
+    })
   }, [])
 
   // Quitação de Fatura de Cartão
@@ -301,11 +420,37 @@ export function useFinanceStore() {
     (_cardId: string, invoiceTransactions: Transaction[]) => {
       const txIds = new Set(invoiceTransactions.map((t) => t.id))
       setTransactions((prev) =>
-        prev.map((tx) => (txIds.has(tx.id) ? { ...tx, status: 'paid' } : tx))
+        prev.map((tx) => {
+          if (txIds.has(tx.id)) {
+            updateTransactionInSupabase(tx.id, { status: 'paid' })
+            return { ...tx, status: 'paid' }
+          }
+          return tx
+        })
       )
     },
     []
   )
+
+  // Recarrega dados manualmente da nuvem
+  const reloadFromCloud = useCallback(async () => {
+    setIsSyncing(true)
+    try {
+      const [remoteAccounts, remoteCards, remoteTxs] = await Promise.all([
+        fetchAccountsFromSupabase(),
+        fetchCardsFromSupabase(),
+        fetchTransactionsFromSupabase(),
+      ])
+      setAccounts(remoteAccounts)
+      setCards(remoteCards)
+      setTransactions(remoteTxs)
+      setIsCloudConnected(true)
+    } catch (e) {
+      console.error('Erro ao recarregar do Supabase:', e)
+    } finally {
+      setIsSyncing(false)
+    }
+  }, [])
 
   // Gerenciamento de Dados
   const resetToMockData = useCallback(() => {
@@ -314,15 +459,25 @@ export function useFinanceStore() {
     setTransactions(generateInitialTransactions())
   }, [])
 
-  const clearAllData = useCallback(() => {
+  const clearAllData = useCallback(async () => {
+    // Exclui local e do banco se o usuário solicitar limpeza total
+    for (const acc of accounts) {
+      await deleteAccountFromSupabase(acc.id)
+    }
+    for (const c of cards) {
+      await deleteCardFromSupabase(c.id)
+    }
+    for (const tx of transactions) {
+      await deleteTransactionFromSupabase(tx.id)
+    }
     setAccounts([])
     setCards([])
     setTransactions([])
-  }, [])
+  }, [accounts, cards, transactions])
 
   const exportDataJSON = useCallback(() => {
     const data = {
-      version: '1.1',
+      version: '1.2',
       exportedAt: new Date().toISOString(),
       accounts,
       cards,
@@ -339,16 +494,24 @@ export function useFinanceStore() {
     URL.revokeObjectURL(url)
   }, [accounts, cards, transactions])
 
-  const importDataJSON = useCallback((jsonStr: string) => {
+  const importDataJSON = useCallback(async (jsonStr: string) => {
     try {
       const parsed = JSON.parse(jsonStr)
       if (Array.isArray(parsed.cards) && Array.isArray(parsed.transactions)) {
         if (Array.isArray(parsed.accounts)) {
           setAccounts(parsed.accounts)
+          for (const acc of parsed.accounts) {
+            await saveAccountToSupabase(acc)
+          }
         }
         setCards(parsed.cards)
+        for (const c of parsed.cards) {
+          await saveCardToSupabase(c)
+        }
         setTransactions(parsed.transactions)
-        return { success: true, message: 'Dados importados com sucesso!' }
+        await saveTransactionsBatchToSupabase(parsed.transactions)
+
+        return { success: true, message: 'Dados importados e salvos no Supabase com sucesso!' }
       }
       return { success: false, message: 'Arquivo JSON em formato incompatível.' }
     } catch {
@@ -360,6 +523,9 @@ export function useFinanceStore() {
     theme,
     setTheme,
     toggleTheme: () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light')),
+    isSyncing,
+    isCloudConnected,
+    reloadFromCloud,
     accounts,
     cards,
     transactions,

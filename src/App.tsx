@@ -17,6 +17,9 @@ export function App() {
   const {
     theme,
     toggleTheme,
+    isSyncing,
+    isCloudConnected,
+    reloadFromCloud,
     accounts,
     cards,
     transactions,
@@ -90,8 +93,8 @@ export function App() {
     setTimeout(() => setToastMessage(null), 3500)
   }
 
-  const handleImportBackup = (jsonStr: string) => {
-    const res = importDataJSON(jsonStr)
+  const handleImportBackup = async (jsonStr: string) => {
+    const res = await importDataJSON(jsonStr)
     showToast(res.message)
   }
 
@@ -132,6 +135,9 @@ export function App() {
         onImportBackup={handleImportBackup}
         onResetData={handleResetData}
         onLockApp={handleLock}
+        isSyncing={isSyncing}
+        isCloudConnected={isCloudConnected}
+        onReloadCloud={reloadFromCloud}
         totalCardsCount={cards.length}
         totalAccountsCount={accounts.length}
         pendingTxCount={pendingTransactionsCount}
