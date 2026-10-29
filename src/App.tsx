@@ -11,6 +11,7 @@ import { PlanningView } from './components/PlanningView'
 import { NewTransactionModal } from './components/NewTransactionModal'
 import { NewCardModal } from './components/NewCardModal'
 import { NewAccountModal } from './components/NewAccountModal'
+import { PinLockScreen } from './components/PinLockScreen'
 
 export function App() {
   const {
@@ -61,6 +62,29 @@ export function App() {
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
+  // Autenticação com Senha PIN (0638)
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('aegis_session_unlocked_v2') === 'true'
+    } catch {
+      return false
+    }
+  })
+
+  const handleUnlock = () => {
+    setIsUnlocked(true)
+    try {
+      sessionStorage.setItem('aegis_session_unlocked_v2', 'true')
+    } catch {}
+  }
+
+  const handleLock = () => {
+    setIsUnlocked(false)
+    try {
+      sessionStorage.removeItem('aegis_session_unlocked_v2')
+    } catch {}
+  }
+
   const showToast = (msg: string) => {
     setToastMessage(msg)
     setTimeout(() => setToastMessage(null), 3500)
@@ -78,10 +102,15 @@ export function App() {
 
   const handleResetData = () => {
     resetToMockData()
-    showToast('Dados de demonstração restaurados!')
+    showToast('Todos os dados foram zerados com sucesso!')
   }
 
   const pendingTransactionsCount = periodTransactions.filter((t) => t.status === 'pending').length
+
+  // Tela de Bloqueio por Senha PIN (0638)
+  if (!isUnlocked) {
+    return <PinLockScreen onUnlock={handleUnlock} />
+  }
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] dark:bg-[#090A0F] text-zinc-900 dark:text-zinc-100 flex flex-col font-sans selection:bg-emerald-500/20 selection:text-emerald-500 transition-colors">
@@ -102,6 +131,7 @@ export function App() {
         onExportBackup={handleExportBackup}
         onImportBackup={handleImportBackup}
         onResetData={handleResetData}
+        onLockApp={handleLock}
         totalCardsCount={cards.length}
         totalAccountsCount={accounts.length}
         pendingTxCount={pendingTransactionsCount}

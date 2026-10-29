@@ -82,80 +82,83 @@ export function CashFlowView({
         </div>
       )}
 
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* KPI Cards Grid (Responsive 2x2 on mobile, 4-col on desktop) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         
         {/* Card 1: Saldo Disponível Hoje */}
-        <div className="rounded-2xl p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/90 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:border-zinc-300 dark:hover:border-zinc-700/80 transition-all">
-          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-xs mb-2">
-            <span className="font-medium">Saldo em Caixa (Líquido)</span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5" />
+        <div className="rounded-2xl p-3.5 sm:p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/90 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:border-zinc-300 dark:hover:border-zinc-700/80 transition-all flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-xs mb-1.5 sm:mb-2">
+              <span className="font-medium truncate">Saldo em Caixa</span>
+              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              </div>
+            </div>
+            <div className="text-lg sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-white font-mono-numbers truncate">
+              {formatCurrency(summary.realizedBalance, privacyMode)}
             </div>
           </div>
-          <div className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white font-mono-numbers">
-            {formatCurrency(summary.realizedBalance, privacyMode)}
-          </div>
-          <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-            <span>Recursos já liquidados e confirmados</span>
+          <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+            <span className="truncate">Confirmado</span>
           </div>
         </div>
 
         {/* Card 2: Entradas no Período */}
-        <div className="rounded-2xl p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/90 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:border-zinc-300 dark:hover:border-zinc-700/80 transition-all">
-          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-xs mb-2">
-            <span className="font-medium">Entradas do Período</span>
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <ArrowUpRight className="w-4 h-4" />
+        <div className="rounded-2xl p-3.5 sm:p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/90 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:border-zinc-300 dark:hover:border-zinc-700/80 transition-all flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-xs mb-1.5 sm:mb-2">
+              <span className="font-medium truncate">Entradas</span>
+              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </div>
+            </div>
+            <div className="text-lg sm:text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono-numbers truncate">
+              +{formatCurrency(summary.totalIncomes, privacyMode)}
             </div>
           </div>
-          <div className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono-numbers">
-            +{formatCurrency(summary.totalIncomes, privacyMode)}
-          </div>
-          <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400 flex justify-between">
+          <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 flex justify-between gap-1 truncate">
             <span>Recebido: <strong className="text-zinc-800 dark:text-zinc-200">{formatCurrency(summary.periodIncomesRealized, privacyMode)}</strong></span>
-            <span>A receber: <strong className="text-zinc-500 dark:text-zinc-400">{formatCurrency(summary.periodIncomesPending, privacyMode)}</strong></span>
           </div>
         </div>
 
         {/* Card 3: Saídas no Período */}
-        <div className="rounded-2xl p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/90 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:border-zinc-300 dark:hover:border-zinc-700/80 transition-all">
-          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-xs mb-2">
-            <span className="font-medium">Saídas / Despesas</span>
-            <div className="w-7 h-7 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
-              <ArrowDownRight className="w-4 h-4" />
+        <div className="rounded-2xl p-3.5 sm:p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/90 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:border-zinc-300 dark:hover:border-zinc-700/80 transition-all flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-xs mb-1.5 sm:mb-2">
+              <span className="font-medium truncate">Saídas / Gastos</span>
+              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                <ArrowDownRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </div>
+            </div>
+            <div className="text-lg sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-200 font-mono-numbers truncate">
+              -{formatCurrency(summary.totalExpenses, privacyMode)}
             </div>
           </div>
-          <div className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-200 font-mono-numbers">
-            -{formatCurrency(summary.totalExpenses, privacyMode)}
-          </div>
-          <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400 flex justify-between">
+          <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 flex justify-between gap-1 truncate">
             <span>Pago: <strong className="text-zinc-800 dark:text-zinc-200">{formatCurrency(summary.periodExpensesRealized, privacyMode)}</strong></span>
-            <span>A pagar: <strong className="text-amber-600 dark:text-amber-400">{formatCurrency(summary.periodExpensesPending, privacyMode)}</strong></span>
           </div>
         </div>
 
         {/* Card 4: Projeção Final de Saldo */}
-        <div className="rounded-2xl p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/90 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:border-emerald-500/40 transition-all">
-          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-xs mb-2">
-            <span className="font-medium">Saldo Projetado Final</span>
-            <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4" />
+        <div className="rounded-2xl p-3.5 sm:p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/90 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:border-emerald-500/40 transition-all flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-xs mb-1.5 sm:mb-2">
+              <span className="font-medium truncate">Saldo Final</span>
+              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </div>
+            </div>
+            <div className={`text-lg sm:text-2xl font-bold tracking-tight font-mono-numbers truncate ${
+              summary.projectedMonthEndBalance >= 0 ? 'text-zinc-900 dark:text-white' : 'text-rose-600 dark:text-rose-400'
+            }`}>
+              {formatCurrency(summary.projectedMonthEndBalance, privacyMode)}
             </div>
           </div>
-          <div className={`text-2xl font-bold tracking-tight font-mono-numbers ${
-            summary.projectedMonthEndBalance >= 0 ? 'text-zinc-900 dark:text-white' : 'text-rose-600 dark:text-rose-400'
-          }`}>
-            {formatCurrency(summary.projectedMonthEndBalance, privacyMode)}
-          </div>
-          <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center justify-between">
-            <span>Resultado: <strong className={summary.netPeriodResult >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
+          <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center justify-between">
+            <span className="truncate">Líquido: <strong className={summary.netPeriodResult >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
               {summary.netPeriodResult >= 0 ? '+' : ''}{formatCurrency(summary.netPeriodResult, privacyMode)}
             </strong></span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-mono-numbers font-semibold">
-              {summary.savingsRatePercentage.toFixed(0)}% poupança
-            </span>
           </div>
         </div>
 
@@ -252,8 +255,8 @@ export function CashFlowView({
 
         </div>
 
-        {/* Tabela de Lançamentos */}
-        <div className="overflow-x-auto">
+        {/* Tabela de Lançamentos (Desktop / Tablet) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 text-[11px] font-semibold uppercase tracking-wider">
@@ -384,6 +387,96 @@ export function CashFlowView({
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Lista de Lançamentos (Mobile: telas < md) */}
+        <div className="md:hidden divide-y divide-zinc-100 dark:divide-zinc-800/60">
+          {filteredTransactions.length === 0 ? (
+            <div className="py-12 text-center text-zinc-400 dark:text-zinc-500 px-4">
+              <p className="font-medium text-xs">Nenhum lançamento encontrado com os filtros atuais.</p>
+              <button
+                onClick={onOpenNewTransaction}
+                className="mt-3 text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline block mx-auto"
+              >
+                + Cadastrar lançamento agora
+              </button>
+            </div>
+          ) : (
+            filteredTransactions.map((tx) => {
+              const isIncome = tx.type === 'income'
+              const isCard = tx.paymentMethod === 'credit_card'
+              const card = isCard ? cards.find((c) => c.id === tx.creditCardId) : null
+              const isPaid = tx.status === 'paid'
+
+              return (
+                <div
+                  key={tx.id}
+                  className="p-3.5 flex items-center justify-between gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <button
+                      onClick={() => onToggleStatus(tx.id)}
+                      title={isPaid ? 'Marcado como Liquidado' : 'Pendente'}
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all ${
+                        isPaid
+                          ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500'
+                      }`}
+                    >
+                      {isPaid ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                    </button>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 truncate">
+                          {tx.description}
+                        </span>
+                        {tx.cardStatementName && (
+                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-purple-100/70 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300">
+                            {tx.cardStatementName}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 text-[10px] text-zinc-500 mt-0.5">
+                        <span className="font-medium text-zinc-600 dark:text-zinc-400">{formatDateBR(tx.date)}</span>
+                        <span>•</span>
+                        <span className="truncate max-w-[85px]">{tx.category}</span>
+                        {isCard && card && (
+                          <>
+                            <span>•</span>
+                            <span className="text-purple-600 dark:text-purple-400 font-medium truncate max-w-[80px]">
+                              {card.name}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0 text-right">
+                    <div>
+                      <div className={`font-mono-numbers font-bold text-xs ${
+                        isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-900 dark:text-zinc-100'
+                      }`}>
+                        {isIncome ? '+' : '-'}{formatCurrency(tx.amount, privacyMode)}
+                      </div>
+                      {tx.installmentsTotal && tx.installmentsTotal > 1 && (
+                        <div className="text-[9px] text-zinc-400">
+                          {tx.installmentNumber}/{tx.installmentsTotal}x
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => onDeleteTransaction(tx.id)}
+                      className="p-1 rounded text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                      title="Excluir"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )
+            })
+          )}
         </div>
 
       </div>

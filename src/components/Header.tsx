@@ -19,6 +19,7 @@ import {
   Smartphone,
   X,
   Sparkles,
+  Lock,
 } from 'lucide-react'
 
 interface HeaderProps {
@@ -36,6 +37,7 @@ interface HeaderProps {
   onExportBackup: () => void
   onImportBackup: (jsonStr: string) => void
   onResetData: () => void
+  onLockApp?: () => void
   totalCardsCount: number
   totalAccountsCount: number
   pendingTxCount: number
@@ -56,6 +58,7 @@ export function Header({
   onExportBackup,
   onImportBackup,
   onResetData,
+  onLockApp,
   totalCardsCount,
   totalAccountsCount,
   pendingTxCount,
@@ -117,30 +120,32 @@ export function Header({
   ]
 
   return (
-    <header className="sticky top-0 z-40 bg-white/90 dark:bg-[#090A0F]/90 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800/80 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-3">
+    <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#090A0F]/95 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800/80 transition-colors shadow-xs">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        
+        {/* Top Control Bar */}
+        <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-3">
           
           {/* Logo & Brand Identity */}
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 ring-1 ring-white/20">
-              <Layers className="w-5 h-5 text-zinc-950 font-bold" />
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 ring-1 ring-white/20">
+              <Layers className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-950 font-bold" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold tracking-tight text-zinc-900 dark:text-white text-base">AEGIS</span>
-                <span className="text-[10px] font-bold tracking-widest uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                <span className="font-extrabold tracking-tight text-zinc-900 dark:text-white text-sm sm:text-base">AEGIS</span>
+                <span className="text-[9px] sm:text-[10px] font-bold tracking-widest uppercase px-1 sm:px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                   FINANCE
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-normal hidden sm:block">
+              <p className="text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 font-normal hidden lg:block">
                 Fluxo de Caixa, Contas & Cartões
               </p>
             </div>
           </div>
 
-          {/* Navigation Tabs (Center) */}
-          <nav className="flex items-center p-1 bg-zinc-100 dark:bg-zinc-900/90 rounded-xl border border-zinc-200 dark:border-zinc-800/80 shadow-inner">
+          {/* Navigation Tabs (Desktop & Tablet: hidden on mobile) */}
+          <nav className="hidden md:flex items-center p-1 bg-zinc-100 dark:bg-zinc-900/90 rounded-xl border border-zinc-200 dark:border-zinc-800/80 shadow-inner">
             <button
               onClick={() => setActiveTab('cashflow')}
               className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
@@ -197,20 +202,19 @@ export function Header({
               }`}
             >
               <PieChart className="w-3.5 h-3.5 text-amber-500" />
-              <span className="hidden sm:inline">DRE & Metas</span>
-              <span className="sm:hidden">DRE</span>
+              <span>DRE & Metas</span>
             </button>
           </nav>
 
           {/* Right Action Tools */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             
-            {/* Period Selector */}
-            <div className="relative hidden lg:block">
+            {/* Period Selector (Available on all screens) */}
+            <div className="relative">
               <select
                 value={period}
                 onChange={(e) => setPeriod(e.target.value as PeriodFilter)}
-                className="appearance-none bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 text-xs font-medium pl-3 pr-8 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer shadow-sm"
+                className="appearance-none bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 text-[11px] sm:text-xs font-medium pl-2 sm:pl-3 pr-6 sm:pr-8 py-1.5 sm:py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer shadow-sm max-w-[105px] sm:max-w-none text-ellipsis"
               >
                 {periodOptions.map((opt) => (
                   <option key={opt.value} value={opt.value} className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200">
@@ -218,39 +222,50 @@ export function Header({
                   </option>
                 ))}
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDown className="w-3 h-3 text-zinc-400 absolute right-1.5 sm:right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
+
+            {/* Lock App Button */}
+            {onLockApp && (
+              <button
+                onClick={onLockApp}
+                title="Bloquear aplicativo com senha PIN"
+                className="p-1.5 sm:p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all shadow-sm"
+              >
+                <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
+              </button>
+            )}
 
             {/* Light / Dark Mode Toggle */}
             <button
               onClick={toggleTheme}
               title={theme === 'light' ? 'Mudar para Tema Escuro' : 'Mudar para Tema Claro'}
-              className="p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-all shadow-sm"
+              className="p-1.5 sm:p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-all shadow-sm"
             >
-              {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4 text-amber-400" />}
+              {theme === 'light' ? <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />}
             </button>
 
             {/* Privacy Mode Toggle */}
             <button
               onClick={togglePrivacyMode}
               title={privacyMode ? 'Modo Discreto Ativo' : 'Ativar Modo Discreto'}
-              className={`p-2 rounded-xl border transition-all shadow-sm ${
+              className={`p-1.5 sm:p-2 rounded-xl border transition-all shadow-sm ${
                 privacyMode
                   ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
                   : 'bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 border-zinc-200 dark:border-zinc-800'
               }`}
             >
-              {privacyMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {privacyMode ? <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
             </button>
 
-            {/* Install App CTA Button */}
+            {/* Install App CTA Button (hidden on mobile, inside menu on mobile) */}
             <button
               onClick={handleInstallClick}
               title="Instalar aplicativo no dispositivo"
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition-all shadow-sm"
+              className="hidden lg:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition-all shadow-sm"
             >
               <Smartphone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span className="hidden md:inline">Instalar App</span>
+              <span>Instalar App</span>
               {isInstallable && (
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               )}
@@ -260,10 +275,10 @@ export function Header({
             <div className="relative">
               <button
                 onClick={() => setShowDataMenu((prev) => !prev)}
-                className="p-2 rounded-xl bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 border border-zinc-200 dark:border-zinc-800 transition-all shadow-sm"
+                className="p-1.5 sm:p-2 rounded-xl bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 border border-zinc-200 dark:border-zinc-800 transition-all shadow-sm"
                 title="Gestão de Dados & Backup"
               >
-                <SlidersHorizontal className="w-4 h-4" />
+                <SlidersHorizontal className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
 
               {showDataMenu && (
@@ -272,7 +287,7 @@ export function Header({
                     className="fixed inset-0 z-40"
                     onClick={() => setShowDataMenu(false)}
                   />
-                  <div className="absolute right-0 mt-2 w-60 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl py-1 z-50 text-xs text-zinc-700 dark:text-zinc-300">
+                  <div className="absolute right-0 mt-2 w-64 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl py-1 z-50 text-xs text-zinc-700 dark:text-zinc-300">
                     <button
                       onClick={() => {
                         setShowDataMenu(false)
@@ -281,7 +296,7 @@ export function Header({
                       className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-colors text-emerald-600 dark:text-emerald-400 font-medium"
                     >
                       <Smartphone className="w-3.5 h-3.5" />
-                      <span>Instalar como App (PWA)</span>
+                      <span>Instalar como Aplicativo (PWA)</span>
                     </button>
 
                     <div className="border-t border-zinc-200 dark:border-zinc-800 my-1" />
@@ -312,15 +327,15 @@ export function Header({
 
                     <button
                       onClick={() => {
-                        if (confirm('Deseja recarregar os dados de exemplo pré-configurados?')) {
+                        if (confirm('Atenção: Deseja realmente zerar e apagar todos os lançamentos, contas e cartões cadastrados?')) {
                           onResetData()
                         }
                         setShowDataMenu(false)
                       }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-amber-600 dark:text-amber-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors font-medium"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Carregar Dados Demonstrativos</span>
+                      <span>Zerar Todos os Dados do App</span>
                     </button>
                   </div>
                 </>
@@ -334,7 +349,7 @@ export function Header({
               />
             </div>
 
-            {/* Quick Actions Dropdown / Buttons */}
+            {/* Quick Actions (Desktop only) */}
             <button
               onClick={onOpenNewAccount}
               className="hidden xl:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all shadow-sm"
@@ -354,15 +369,84 @@ export function Header({
             {/* Primary CTA: Add Transaction */}
             <button
               onClick={onOpenNewTransaction}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-zinc-950 bg-emerald-500 hover:bg-emerald-400 transition-all shadow-md shadow-emerald-500/20"
+              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold text-zinc-950 bg-emerald-500 hover:bg-emerald-400 transition-all shadow-md shadow-emerald-500/20 shrink-0"
             >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
               <span className="hidden sm:inline">Novo Lançamento</span>
               <span className="sm:hidden">Lançar</span>
             </button>
 
           </div>
         </div>
+
+        {/* Mobile Navigation Segmented Tabs (Visible on screens < md) */}
+        <div className="md:hidden pb-2.5 pt-0.5">
+          <nav className="grid grid-cols-4 gap-1 p-1 bg-zinc-100 dark:bg-zinc-900/90 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-inner">
+            <button
+              onClick={() => setActiveTab('cashflow')}
+              className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-lg text-[10px] font-semibold transition-all relative ${
+                activeTab === 'cashflow'
+                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200 dark:border-zinc-700/60'
+                  : 'text-zinc-500 dark:text-zinc-400'
+              }`}
+            >
+              <Wallet className="w-4 h-4 text-emerald-500 mb-0.5" />
+              <span>Fluxo</span>
+              {pendingTxCount > 0 && (
+                <span className="absolute top-1 right-1 px-1 py-0.1 rounded-full text-[9px] font-mono-numbers bg-emerald-500 text-zinc-950 font-bold">
+                  {pendingTxCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('accounts')}
+              className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-lg text-[10px] font-semibold transition-all relative ${
+                activeTab === 'accounts'
+                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200 dark:border-zinc-700/60'
+                  : 'text-zinc-500 dark:text-zinc-400'
+              }`}
+            >
+              <Landmark className="w-4 h-4 text-blue-500 mb-0.5" />
+              <span>Contas</span>
+              {totalAccountsCount > 0 && (
+                <span className="absolute top-1 right-1 px-1 py-0.1 rounded-full text-[9px] font-mono-numbers bg-blue-500 text-white font-bold">
+                  {totalAccountsCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('cards')}
+              className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-lg text-[10px] font-semibold transition-all relative ${
+                activeTab === 'cards'
+                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200 dark:border-zinc-700/60'
+                  : 'text-zinc-500 dark:text-zinc-400'
+              }`}
+            >
+              <CreditCardIcon className="w-4 h-4 text-purple-500 mb-0.5" />
+              <span>Cartões</span>
+              {totalCardsCount > 0 && (
+                <span className="absolute top-1 right-1 px-1 py-0.1 rounded-full text-[9px] font-mono-numbers bg-purple-500 text-white font-bold">
+                  {totalCardsCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('planning')}
+              className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-lg text-[10px] font-semibold transition-all ${
+                activeTab === 'planning'
+                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200 dark:border-zinc-700/60'
+                  : 'text-zinc-500 dark:text-zinc-400'
+              }`}
+            >
+              <PieChart className="w-4 h-4 text-amber-500 mb-0.5" />
+              <span>DRE</span>
+            </button>
+          </nav>
+        </div>
+
       </div>
 
       {/* PWA Install Guidance Modal */}

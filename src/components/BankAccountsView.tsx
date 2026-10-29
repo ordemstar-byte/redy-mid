@@ -80,70 +80,78 @@ export function BankAccountsView({
   return (
     <div className="space-y-8">
       
-      {/* Top Consolidator Metrics Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Top Consolidator Metrics Bar (Responsive 2x2 on mobile, 4-col on desktop) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         
         {/* Total Bank Balance */}
-        <div className="rounded-2xl p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm">
-          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-xs mb-1">
-            <span className="font-medium">Saldo Consolidado em Contas</span>
-            <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5" />
+        <div className="rounded-2xl p-3.5 sm:p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-xs mb-1.5 sm:mb-2">
+              <span className="font-medium truncate">Saldo Total Contas</span>
+              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <Sparkles className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <div className="text-lg sm:text-2xl font-bold font-mono-numbers text-zinc-900 dark:text-white truncate">
+              {formatCurrency(summary.totalCurrentBalance, privacyMode)}
             </div>
           </div>
-          <div className="text-2xl font-bold font-mono-numbers text-zinc-900 dark:text-white">
-            {formatCurrency(summary.totalCurrentBalance, privacyMode)}
-          </div>
-          <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-            Soma de {summary.accountsCount} contas bancárias ativas
+          <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
+            {summary.accountsCount} contas ativas
           </div>
         </div>
 
         {/* Total Incomes in Accounts */}
-        <div className="rounded-2xl p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm">
-          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-xs mb-1">
-            <span className="font-medium">Entradas Creditadas</span>
-            <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <ArrowUpRight className="w-4 h-4" />
+        <div className="rounded-2xl p-3.5 sm:p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-xs mb-1.5 sm:mb-2">
+              <span className="font-medium truncate">Entradas</span>
+              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <ArrowUpRight className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-lg sm:text-2xl font-bold font-mono-numbers text-emerald-600 dark:text-emerald-400 truncate">
+              +{formatCurrency(summary.totalIncomes, privacyMode)}
             </div>
           </div>
-          <div className="text-2xl font-bold font-mono-numbers text-emerald-600 dark:text-emerald-400">
-            +{formatCurrency(summary.totalIncomes, privacyMode)}
-          </div>
-          <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-            Transferências e recebimentos já liquidados
+          <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
+            Recebimentos liquidados
           </div>
         </div>
 
         {/* Total Expenses Debited */}
-        <div className="rounded-2xl p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm">
-          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-xs mb-1">
-            <span className="font-medium">Saídas Debitadas</span>
-            <div className="w-6 h-6 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
-              <ArrowDownRight className="w-4 h-4" />
+        <div className="rounded-2xl p-3.5 sm:p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-xs mb-1.5 sm:mb-2">
+              <span className="font-medium truncate">Saídas Debitadas</span>
+              <div className="w-6 h-6 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                <ArrowDownRight className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-lg sm:text-2xl font-bold font-mono-numbers text-zinc-800 dark:text-zinc-200 truncate">
+              -{formatCurrency(summary.totalExpenses, privacyMode)}
             </div>
           </div>
-          <div className="text-2xl font-bold font-mono-numbers text-zinc-800 dark:text-zinc-200">
-            -{formatCurrency(summary.totalExpenses, privacyMode)}
-          </div>
-          <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-            Pagamentos e transferências liquidadas
+          <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
+            Transferências e débitos
           </div>
         </div>
 
         {/* Net Ratio */}
-        <div className="rounded-2xl p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm">
-          <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-xs mb-1">
-            <span className="font-medium">Resultado Bancário Líquido</span>
-            <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4" />
+        <div className="rounded-2xl p-3.5 sm:p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-xs mb-1.5 sm:mb-2">
+              <span className="font-medium truncate">Líquido Bancário</span>
+              <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="text-lg sm:text-2xl font-bold font-mono-numbers text-zinc-900 dark:text-white truncate">
+              {formatCurrency(summary.totalIncomes - summary.totalExpenses, privacyMode)}
             </div>
           </div>
-          <div className="text-2xl font-bold font-mono-numbers text-zinc-900 dark:text-white">
-            {formatCurrency(summary.totalIncomes - summary.totalExpenses, privacyMode)}
-          </div>
-          <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-            Fluxo líquido movimentado no período
+          <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
+            Fluxo bancário no período
           </div>
         </div>
 

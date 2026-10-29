@@ -87,27 +87,32 @@ export function CreditCardsView({
     <div className="space-y-8">
       
       {/* Top Consolidator Metrics Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Top Consolidator Metrics Bar (Responsive 2x2 on mobile, 4-col on desktop) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         
         {/* Total Credit Limit */}
-        <div className="rounded-2xl p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/90 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm">
-          <div className="text-zinc-500 dark:text-zinc-400 text-xs font-medium mb-1">Limite Total de Crédito</div>
-          <div className="text-2xl font-bold font-mono-numbers text-zinc-900 dark:text-white">
-            {formatCurrency(summary.totalLimit, privacyMode)}
+        <div className="rounded-2xl p-3.5 sm:p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/90 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm flex flex-col justify-between">
+          <div>
+            <div className="text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-xs font-medium mb-1 truncate">Limite Total</div>
+            <div className="text-lg sm:text-2xl font-bold font-mono-numbers text-zinc-900 dark:text-white truncate">
+              {formatCurrency(summary.totalLimit, privacyMode)}
+            </div>
           </div>
-          <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-            Soma de {detailedCards.length} cartões ativos
+          <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
+            {detailedCards.length} cartões ativos
           </div>
         </div>
 
         {/* Total Committed */}
-        <div className="rounded-2xl p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/90 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm">
-          <div className="text-zinc-500 dark:text-zinc-400 text-xs font-medium mb-1">Limite Comprometido</div>
-          <div className="text-2xl font-bold font-mono-numbers text-purple-600 dark:text-purple-400">
-            {formatCurrency(summary.totalUsed, privacyMode)}
+        <div className="rounded-2xl p-3.5 sm:p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/90 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm flex flex-col justify-between">
+          <div>
+            <div className="text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-xs font-medium mb-1 truncate">Limite Comprometido</div>
+            <div className="text-lg sm:text-2xl font-bold font-mono-numbers text-purple-600 dark:text-purple-400 truncate">
+              {formatCurrency(summary.totalUsed, privacyMode)}
+            </div>
           </div>
-          <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center justify-between">
-            <span>Uso consolidado:</span>
+          <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center justify-between">
+            <span>Uso:</span>
             <span className="font-mono-numbers font-semibold text-zinc-800 dark:text-zinc-200">
               {summary.usagePercentage.toFixed(1)}%
             </span>
@@ -115,25 +120,29 @@ export function CreditCardsView({
         </div>
 
         {/* Total Available */}
-        <div className="rounded-2xl p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/90 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm">
-          <div className="text-zinc-500 dark:text-zinc-400 text-xs font-medium mb-1">Limite Disponível Livre</div>
-          <div className="text-2xl font-bold font-mono-numbers text-emerald-600 dark:text-emerald-400">
-            {formatCurrency(summary.totalAvailable, privacyMode)}
+        <div className="rounded-2xl p-3.5 sm:p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/90 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm flex flex-col justify-between">
+          <div>
+            <div className="text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-xs font-medium mb-1 truncate">Limite Livre</div>
+            <div className="text-lg sm:text-2xl font-bold font-mono-numbers text-emerald-600 dark:text-emerald-400 truncate">
+              {formatCurrency(summary.totalAvailable, privacyMode)}
+            </div>
           </div>
-          <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-            Capacidade de compra imediata
+          <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
+            Livre para compras
           </div>
         </div>
 
         {/* Current Invoices Total */}
-        <div className="rounded-2xl p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/90 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm">
-          <div className="text-zinc-500 dark:text-zinc-400 text-xs font-medium mb-1">Faturas Deste Mês</div>
-          <div className="text-2xl font-bold font-mono-numbers text-zinc-900 dark:text-zinc-200">
-            {formatCurrency(summary.currentMonthInvoicesTotal, privacyMode)}
+        <div className="rounded-2xl p-3.5 sm:p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/90 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm flex flex-col justify-between">
+          <div>
+            <div className="text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-xs font-medium mb-1 truncate">Faturas Deste Mês</div>
+            <div className="text-lg sm:text-2xl font-bold font-mono-numbers text-zinc-900 dark:text-zinc-200 truncate">
+              {formatCurrency(summary.currentMonthInvoicesTotal, privacyMode)}
+            </div>
           </div>
-          <div className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center justify-between">
-            <span>Próximo mês:</span>
-            <span className="font-mono-numbers text-zinc-700 dark:text-zinc-300 font-medium">
+          <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center justify-between">
+            <span>Próximo:</span>
+            <span className="font-mono-numbers text-zinc-700 dark:text-zinc-300 font-medium truncate">
               {formatCurrency(summary.nextMonthInvoicesTotal, privacyMode)}
             </span>
           </div>

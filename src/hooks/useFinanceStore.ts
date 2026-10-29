@@ -4,13 +4,27 @@ import { INITIAL_CARDS, INITIAL_ACCOUNTS, generateInitialTransactions } from '..
 import { calculateInvoiceDueDate } from '../lib/utils'
 
 const STORAGE_KEYS = {
-  CARDS: 'aegis_finance_cards_v1',
-  ACCOUNTS: 'aegis_finance_accounts_v1',
-  TRANSACTIONS: 'aegis_finance_transactions_v1',
+  CARDS: 'aegis_finance_cards_prod_v2',
+  ACCOUNTS: 'aegis_finance_accounts_prod_v2',
+  TRANSACTIONS: 'aegis_finance_transactions_prod_v2',
   PRIVACY: 'aegis_finance_privacy_mode',
   PERIOD: 'aegis_finance_period_filter',
   TAB: 'aegis_finance_active_tab',
   THEME: 'aegis_finance_theme_v2',
+}
+
+// Limpeza única de dados legados de demonstração
+if (typeof window !== 'undefined') {
+  try {
+    if (localStorage.getItem('aegis_prod_clean_done_v2') !== 'true') {
+      localStorage.removeItem('aegis_finance_cards_v1')
+      localStorage.removeItem('aegis_finance_accounts_v1')
+      localStorage.removeItem('aegis_finance_transactions_v1')
+      localStorage.setItem('aegis_prod_clean_done_v2', 'true')
+    }
+  } catch {
+    // Ignore storage errors
+  }
 }
 
 export function useFinanceStore() {
