@@ -431,85 +431,16 @@ export function Header({
               <span>+ Cartão</span>
             </button>
 
-            {/* Primary CTA: Add Transaction */}
+            {/* Primary CTA: Add Transaction (Desktop/Tablet - on mobile it lives in the Bottom Nav Bar) */}
             <button
               onClick={onOpenNewTransaction}
-              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold text-zinc-950 bg-emerald-500 hover:bg-emerald-400 transition-all shadow-md shadow-emerald-500/20 shrink-0"
+              className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-zinc-950 bg-emerald-500 hover:bg-emerald-400 transition-all shadow-md shadow-emerald-500/20 shrink-0"
             >
               <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span className="hidden sm:inline">Novo Lançamento</span>
-              <span className="sm:hidden">Lançar</span>
+              <span>Novo Lançamento</span>
             </button>
 
           </div>
-        </div>
-
-        {/* Mobile Navigation Segmented Tabs (Visible on screens < md) */}
-        <div className="md:hidden pb-2.5 pt-0.5">
-          <nav className="grid grid-cols-4 gap-1 p-1 bg-zinc-100 dark:bg-zinc-900/90 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-inner">
-            <button
-              onClick={() => setActiveTab('cashflow')}
-              className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-lg text-[10px] font-semibold transition-all relative ${
-                activeTab === 'cashflow'
-                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200 dark:border-zinc-700/60'
-                  : 'text-zinc-500 dark:text-zinc-400'
-              }`}
-            >
-              <Wallet className="w-4 h-4 text-emerald-500 mb-0.5" />
-              <span>Fluxo</span>
-              {pendingTxCount > 0 && (
-                <span className="absolute top-1 right-1 px-1 py-0.1 rounded-full text-[9px] font-mono-numbers bg-emerald-500 text-zinc-950 font-bold">
-                  {pendingTxCount}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('accounts')}
-              className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-lg text-[10px] font-semibold transition-all relative ${
-                activeTab === 'accounts'
-                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200 dark:border-zinc-700/60'
-                  : 'text-zinc-500 dark:text-zinc-400'
-              }`}
-            >
-              <Landmark className="w-4 h-4 text-blue-500 mb-0.5" />
-              <span>Contas</span>
-              {totalAccountsCount > 0 && (
-                <span className="absolute top-1 right-1 px-1 py-0.1 rounded-full text-[9px] font-mono-numbers bg-blue-500 text-white font-bold">
-                  {totalAccountsCount}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('cards')}
-              className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-lg text-[10px] font-semibold transition-all relative ${
-                activeTab === 'cards'
-                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200 dark:border-zinc-700/60'
-                  : 'text-zinc-500 dark:text-zinc-400'
-              }`}
-            >
-              <CreditCardIcon className="w-4 h-4 text-purple-500 mb-0.5" />
-              <span>Cartões</span>
-              {totalCardsCount > 0 && (
-                <span className="absolute top-1 right-1 px-1 py-0.1 rounded-full text-[9px] font-mono-numbers bg-purple-500 text-white font-bold">
-                  {totalCardsCount}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('planning')}
-              className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-lg text-[10px] font-semibold transition-all ${
-                activeTab === 'planning'
-                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border border-zinc-200 dark:border-zinc-700/60'
-                  : 'text-zinc-500 dark:text-zinc-400'
-              }`}
-            >
-              <PieChart className="w-4 h-4 text-amber-500 mb-0.5" />
-              <span>DRE</span>
-            </button>
-          </nav>
         </div>
 
       </div>

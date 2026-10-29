@@ -389,60 +389,65 @@ export function CashFlowChart({ timeline, privacyMode = false }: CashFlowChartPr
         <div className="flex flex-wrap items-center gap-3">
           
           {/* Seletor de Tipo */}
-          <div className="flex items-center p-0.5 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 text-xs">
+          <div className="flex items-center p-0.5 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 text-[11px] sm:text-xs">
             <button
               onClick={() => setChartType('dual_lines')}
               title="Gráfico com 2 Linhas: Verde para Ganhos e Vermelha para Gastos"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-medium transition-all ${
                 chartType === 'dual_lines'
                   ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs font-semibold'
                   : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
               }`}
             >
               <LineChart className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Linhas B3 (Ganhos vs Gastos)</span>
+              <span className="hidden sm:inline">Linhas B3 (Ganhos vs Gastos)</span>
+              <span className="sm:hidden">Linhas</span>
             </button>
 
             <button
               onClick={() => setChartType('candlestick')}
               title="Velas Japonesas da Bolsa de Valores (Candlesticks)"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-medium transition-all ${
                 chartType === 'candlestick'
                   ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs font-semibold'
                   : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
               }`}
             >
               <CandlestickChart className="w-3.5 h-3.5 text-purple-500" />
-              <span>Candlestick</span>
+              <span className="hidden sm:inline">Candlestick</span>
+              <span className="sm:hidden">Velas</span>
             </button>
 
             <button
               onClick={() => setChartType('cumulative')}
               title="Evolução acumulada contínua no mês"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg font-medium transition-all ${
                 chartType === 'cumulative'
                   ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs font-semibold'
                   : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
               }`}
             >
               <BarChart3 className="w-3.5 h-3.5 text-blue-500" />
-              <span>Acumulado</span>
+              <span className="hidden sm:inline">Acumulado</span>
+              <span className="sm:hidden">Acum.</span>
             </button>
           </div>
 
           {/* Legenda com Indicadores Oficiais da Bolsa */}
-          <div className="flex items-center gap-3 text-xs font-medium pl-1">
+          <div className="flex items-center gap-2.5 text-[11px] sm:text-xs font-medium pl-1">
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs shadow-emerald-500/50" />
+              <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-500 shadow-xs shadow-emerald-500/50" />
               <span className="text-emerald-700 dark:text-emerald-400 font-semibold font-mono-numbers">
-                Ganhos (Linha Verde)
+                <span className="hidden sm:inline">Ganhos (Linha Verde)</span>
+                <span className="sm:hidden">Ganhos</span>
               </span>
             </div>
 
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-xs shadow-rose-500/50" />
+              <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-rose-500 shadow-xs shadow-rose-500/50" />
               <span className="text-rose-700 dark:text-rose-400 font-semibold font-mono-numbers">
-                Gastos (Linha Vermelha)
+                <span className="hidden sm:inline">Gastos (Linha Vermelha)</span>
+                <span className="sm:hidden">Gastos</span>
               </span>
             </div>
           </div>

@@ -301,7 +301,8 @@ export function BankAccountsView({
 
                         <button
                           onClick={() => onDeleteTransaction(tx.id)}
-                          className="p-1 rounded text-zinc-400 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
+                          className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 active:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors opacity-80 sm:opacity-0 sm:group-hover:opacity-100"
+                          title="Remover lançamento"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>

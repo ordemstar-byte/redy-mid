@@ -86,15 +86,18 @@ export function NewTransactionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md">
-      <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl p-6 text-zinc-800 dark:text-zinc-200 animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center p-0 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md overflow-hidden">
+      <div className="w-full max-w-lg max-h-[92vh] sm:max-h-[88vh] rounded-t-3xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col text-zinc-800 dark:text-zinc-200 animate-in slide-in-from-bottom sm:zoom-in-95 duration-200 overflow-hidden">
         
-        {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-zinc-200 dark:border-zinc-800">
+        {/* Mobile Drag Indicator Bar */}
+        <div className="w-12 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700 mx-auto mt-2.5 sm:hidden shrink-0" />
+
+        {/* Header Fixo */}
+        <div className="flex items-center justify-between p-4 sm:p-6 pb-3 sm:pb-4 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
           <div>
-            <h2 className="text-base font-bold text-zinc-900 dark:text-white">Novo Lançamento Financeiro</h2>
+            <h2 className="text-base font-bold text-zinc-900 dark:text-white">Novo Lançamento</h2>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-              Cadastre receitas, despesas em conta bancária ou compras parceladas no cartão
+              Receitas, despesas em conta bancária ou compras no cartão
             </p>
           </div>
           <button
@@ -105,7 +108,7 @@ export function NewTransactionModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
           
           {/* Tipo de Operação */}
           <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-100 dark:bg-zinc-950 rounded-xl border border-zinc-200 dark:border-zinc-800">

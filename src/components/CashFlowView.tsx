@@ -393,10 +393,10 @@ export function CashFlowView({
         <div className="md:hidden divide-y divide-zinc-100 dark:divide-zinc-800/60">
           {filteredTransactions.length === 0 ? (
             <div className="py-12 text-center text-zinc-400 dark:text-zinc-500 px-4">
-              <p className="font-medium text-xs">Nenhum lançamento encontrado com os filtros atuais.</p>
+              <p className="font-medium text-xs sm:text-sm">Nenhum lançamento encontrado com os filtros atuais.</p>
               <button
                 onClick={onOpenNewTransaction}
-                className="mt-3 text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline block mx-auto"
+                className="mt-3 text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline block mx-auto py-1"
               >
                 + Cadastrar lançamento agora
               </button>
@@ -411,23 +411,25 @@ export function CashFlowView({
               return (
                 <div
                   key={tx.id}
-                  className="p-3.5 flex items-center justify-between gap-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors"
+                  className="py-3 px-1 flex items-center justify-between gap-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors"
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0">
                     <button
+                      type="button"
                       onClick={() => onToggleStatus(tx.id)}
                       title={isPaid ? 'Marcado como Liquidado' : 'Pendente'}
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all ${
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all active:scale-95 ${
                         isPaid
                           ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
                           : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500'
                       }`}
                     >
-                      {isPaid ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                      {isPaid ? <CheckCircle2 className="w-4 h-4 stroke-[2.5]" /> : <Clock className="w-4 h-4" />}
                     </button>
+
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 truncate">
+                        <span className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 truncate">
                           {tx.description}
                         </span>
                         {tx.cardStatementName && (
@@ -436,14 +438,14 @@ export function CashFlowView({
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-1 text-[10px] text-zinc-500 mt-0.5">
-                        <span className="font-medium text-zinc-600 dark:text-zinc-400">{formatDateBR(tx.date)}</span>
+                      <div className="flex items-center gap-1 text-[11px] text-zinc-500 mt-0.5">
+                        <span className="font-semibold text-zinc-600 dark:text-zinc-400">{formatDateBR(tx.date)}</span>
                         <span>•</span>
-                        <span className="truncate max-w-[85px]">{tx.category}</span>
+                        <span className="truncate max-w-[95px]">{tx.category}</span>
                         {isCard && card && (
                           <>
                             <span>•</span>
-                            <span className="text-purple-600 dark:text-purple-400 font-medium truncate max-w-[80px]">
+                            <span className="text-purple-600 dark:text-purple-400 font-medium truncate max-w-[85px]">
                               {card.name}
                             </span>
                           </>
@@ -452,25 +454,26 @@ export function CashFlowView({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0 text-right">
+                  <div className="flex items-center gap-1.5 shrink-0 text-right">
                     <div>
-                      <div className={`font-mono-numbers font-bold text-xs ${
+                      <div className={`font-mono-numbers font-bold text-xs sm:text-sm ${
                         isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-900 dark:text-zinc-100'
                       }`}>
                         {isIncome ? '+' : '-'}{formatCurrency(tx.amount, privacyMode)}
                       </div>
                       {tx.installmentsTotal && tx.installmentsTotal > 1 && (
-                        <div className="text-[9px] text-zinc-400">
+                        <div className="text-[9px] text-zinc-400 font-mono-numbers">
                           {tx.installmentNumber}/{tx.installmentsTotal}x
                         </div>
                       )}
                     </div>
                     <button
+                      type="button"
                       onClick={() => onDeleteTransaction(tx.id)}
-                      className="p-1 rounded text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                      className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 active:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
                       title="Excluir"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>

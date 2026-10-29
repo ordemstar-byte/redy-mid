@@ -94,17 +94,17 @@ export function PinLockScreen({ onUnlock }: PinLockScreenProps) {
   ]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gradient-to-b from-[#090A0F] via-[#0d0f17] to-[#090A0F] text-white selection:bg-none select-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 py-6 bg-gradient-to-b from-[#090A0F] via-[#0d0f17] to-[#090A0F] text-white selection:bg-none select-none overflow-y-auto">
       
       {/* Background ambient light */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative w-full max-w-sm flex flex-col items-center">
+      <div className="relative w-full max-w-sm flex flex-col items-center my-auto">
         
         {/* Brand & Security Header */}
-        <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-600/30 to-emerald-400/20 border border-emerald-500/30 flex items-center justify-center shadow-2xl shadow-emerald-500/20 mb-4 relative">
-            <Lock className={`w-8 h-8 transition-transform duration-300 ${isSuccess ? 'text-emerald-400 scale-110' : 'text-emerald-500'}`} />
+        <div className="flex flex-col items-center text-center mb-5 sm:mb-8">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-emerald-600/30 to-emerald-400/20 border border-emerald-500/30 flex items-center justify-center shadow-2xl shadow-emerald-500/20 mb-3 sm:mb-4 relative">
+            <Lock className={`w-7 h-7 sm:w-8 sm:h-8 transition-transform duration-300 ${isSuccess ? 'text-emerald-400 scale-110' : 'text-emerald-500'}`} />
             {isSuccess && (
               <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-400 flex items-center justify-center animate-ping" />
             )}
@@ -112,20 +112,20 @@ export function PinLockScreen({ onUnlock }: PinLockScreenProps) {
 
           <div className="flex items-center gap-2 mb-1">
             <Shield className="w-4 h-4 text-emerald-400" />
-            <h1 className="text-xl font-extrabold tracking-tight text-white">AEGIS CAPITAL</h1>
+            <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-white">AEGIS CAPITAL</h1>
           </div>
           
-          <p className="text-xs text-zinc-400 font-medium">
+          <p className="text-[11px] sm:text-xs text-zinc-400 font-medium">
             Sistema Executivo • Acesso Restrito
           </p>
 
-          <p className="text-xs text-zinc-500 mt-3">
+          <p className="text-[11px] sm:text-xs text-zinc-500 mt-2">
             Digite a senha de 4 dígitos para desbloquear
           </p>
         </div>
 
         {/* PIN Indicator Dots */}
-        <div className={`flex items-center justify-center gap-4 mb-8 ${hasError ? 'animate-shake' : ''}`}>
+        <div className={`flex items-center justify-center gap-3.5 sm:gap-4 mb-5 sm:mb-8 ${hasError ? 'animate-shake' : ''}`}>
           {Array.from({ length: PIN_LENGTH }).map((_, idx) => {
             const isFilled = idx < pin.length
             return (

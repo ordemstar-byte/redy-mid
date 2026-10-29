@@ -12,6 +12,7 @@ import { NewTransactionModal } from './components/NewTransactionModal'
 import { NewCardModal } from './components/NewCardModal'
 import { NewAccountModal } from './components/NewAccountModal'
 import { PinLockScreen } from './components/PinLockScreen'
+import { BottomNavBar } from './components/BottomNavBar'
 
 export function App() {
   const {
@@ -143,8 +144,8 @@ export function App() {
         pendingTxCount={pendingTransactionsCount}
       />
 
-      {/* Main Body Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main Body Content with mobile bottom padding */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-28 md:pb-8">
         {activeTab === 'cashflow' && (
           <CashFlowView
             summary={cashFlowSummary}
@@ -204,9 +205,19 @@ export function App() {
         )}
       </main>
 
-      {/* Toast Notification */}
+      {/* Mobile Native Bottom Navigation Bar */}
+      <BottomNavBar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onOpenNewTransaction={() => setIsTransactionModalOpen(true)}
+        pendingTxCount={pendingTransactionsCount}
+        totalAccountsCount={accounts.length}
+        totalCardsCount={cards.length}
+      />
+
+      {/* Toast Notification (above bottom nav on mobile) */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-xl bg-zinc-900 text-white text-xs font-semibold shadow-2xl border border-zinc-700/80 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3 duration-200">
+        <div className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 px-4 py-2.5 rounded-xl bg-zinc-900 text-white text-xs font-semibold shadow-2xl border border-zinc-700/80 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3 duration-200">
           <span className="w-2 h-2 rounded-full bg-emerald-400" />
           <span>{toastMessage}</span>
         </div>
