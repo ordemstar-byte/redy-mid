@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { AppTab, PeriodFilter, AppTheme } from '../types'
 import {
   Wallet,
@@ -16,6 +16,9 @@ import {
   Layers,
   Sun,
   Moon,
+  Smartphone,
+  X,
+  Sparkles,
 } from 'lucide-react'
 
 interface HeaderProps {
@@ -58,7 +61,37 @@ export function Header({
   pendingTxCount,
 }: HeaderProps) {
   const [showDataMenu, setShowDataMenu] = useState(false)
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const [isInstallable, setIsInstallable] = useState(false)
+  const [showInstallGuide, setShowInstallGuide] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const handleBeforeInstall = (e: any) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+      setIsInstallable(true)
+    }
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall)
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall)
+  }, [])
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      try {
+        deferredPrompt.prompt()
+        const choice = await deferredPrompt.userChoice
+        if (choice && choice.outcome === 'accepted') {
+          setIsInstallable(false)
+          setDeferredPrompt(null)
+        }
+      } catch (err) {
+        setShowInstallGuide(true)
+      }
+    } else {
+      setShowInstallGuide(true)
+    }
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -210,6 +243,19 @@ export function Header({
               {privacyMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
 
+            {/* Install App CTA Button */}
+            <button
+              onClick={handleInstallClick}
+              title="Instalar aplicativo no dispositivo"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition-all shadow-sm"
+            >
+              <Smartphone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="hidden md:inline">Instalar App</span>
+              {isInstallable && (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              )}
+            </button>
+
             {/* Settings & Data Dropdown */}
             <div className="relative">
               <button
@@ -226,7 +272,20 @@ export function Header({
                     className="fixed inset-0 z-40"
                     onClick={() => setShowDataMenu(false)}
                   />
-                  <div className="absolute right-0 mt-2 w-56 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl py-1 z-50 text-xs text-zinc-700 dark:text-zinc-300">
+                  <div className="absolute right-0 mt-2 w-60 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl py-1 z-50 text-xs text-zinc-700 dark:text-zinc-300">
+                    <button
+                      onClick={() => {
+                        setShowDataMenu(false)
+                        handleInstallClick()
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-colors text-emerald-600 dark:text-emerald-400 font-medium"
+                    >
+                      <Smartphone className="w-3.5 h-3.5" />
+                      <span>Instalar como App (PWA)</span>
+                    </button>
+
+                    <div className="border-t border-zinc-200 dark:border-zinc-800 my-1" />
+
                     <button
                       onClick={() => {
                         onExportBackup()
@@ -305,6 +364,68 @@ export function Header({
           </div>
         </div>
       </div>
+
+      {/* PWA Install Guidance Modal */}
+      {showInstallGuide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/30">
+                  <Smartphone className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-zinc-900 dark:text-white text-base">Instalar Aegis Finance</h3>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">Aplicativo nativo para celular ou computador</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowInstallGuide(false)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 text-xs text-zinc-600 dark:text-zinc-300">
+              <div className="flex items-start gap-3 p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/60">
+                <Sparkles className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-zinc-900 dark:text-white mb-0.5">Vantagens do App Instalado</p>
+                  <p className="text-zinc-500 dark:text-zinc-400">Funciona sem barra de endereço do navegador, carrega instantaneamente em tela cheia e opera com segurança máxima.</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                  <p className="font-bold text-zinc-900 dark:text-white mb-1">📱 No iPhone / iPad (Safari):</p>
+                  <ol className="list-decimal list-inside space-y-1 text-zinc-500 dark:text-zinc-400">
+                    <li>Toque no botão de <strong>Compartilhar</strong> (ícone com quadrado e seta para cima).</li>
+                    <li>Role para baixo e selecione <strong>"Adicionar à Tela de Início"</strong>.</li>
+                    <li>Toque em <strong>Adicionar</strong> no canto superior direito.</li>
+                  </ol>
+                </div>
+
+                <div className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                  <p className="font-bold text-zinc-900 dark:text-white mb-1">💻 No Computador / Android (Chrome ou Edge):</p>
+                  <p className="text-zinc-500 dark:text-zinc-400">
+                    Clique no ícone de <strong>Instalar</strong> que aparece na barra de endereço (lado direito da URL) ou abra o menu do navegador (três pontos) e clique em <strong>"Instalar Aegis Finance"</strong>.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-zinc-50 dark:bg-zinc-800/40 border-t border-zinc-100 dark:border-zinc-800 flex justify-end">
+              <button
+                onClick={() => setShowInstallGuide(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-500 hover:bg-emerald-400 text-zinc-950 transition-colors shadow-sm"
+              >
+                Entendi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   )
 }

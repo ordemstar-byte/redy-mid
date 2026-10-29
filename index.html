@@ -8,6 +8,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="manifest" href="./manifest.json" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Aegis Finance" />
+    <link rel="apple-touch-icon" href="./favicon.svg" />
+    <meta name="theme-color" content="#10B981" />
     <script>
       (function() {
         try {
@@ -24,6 +30,15 @@
           document.documentElement.classList.add('light');
         }
       })();
+    </script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('./sw.js').catch(function(err) {
+            console.debug('ServiceWorker registration error:', err);
+          });
+        });
+      }
     </script>
   </head>
   <body class="bg-[#F8F9FA] text-zinc-900 dark:bg-[#090A0F] dark:text-zinc-100 antialiased selection:bg-emerald-500/20 selection:text-emerald-600 transition-colors">

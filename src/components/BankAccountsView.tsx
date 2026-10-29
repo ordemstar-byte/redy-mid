@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { DetailedBankAccount, Transaction } from '../types'
 import { formatCurrency, formatDateBR } from '../lib/utils'
+import { BankAccountVisual } from './BankAccountVisual'
 import {
   Landmark,
   Plus,
@@ -54,12 +55,6 @@ export function BankAccountsView({
     .filter((tx) => tx.bankAccountId === activeAccount?.id)
     .sort((a, b) => (b.dueDate || b.date).localeCompare(a.dueDate || a.date))
 
-  const accountTypeLabels: Record<string, string> = {
-    checking: 'Conta Corrente',
-    investment: 'Investimentos',
-    savings: 'Reserva / Poupança',
-    cash: 'Dinheiro em Espécie',
-  }
 
   if (detailedAccounts.length === 0) {
     return (
@@ -175,62 +170,15 @@ export function BankAccountsView({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {detailedAccounts.map((account) => {
-            const isSelected = activeAccount?.id === account.id
-            return (
-              <div
-                key={account.id}
-                onClick={() => setSelectedAccountId(account.id)}
-                className={`relative rounded-2xl p-5 bg-white dark:bg-zinc-900 border transition-all duration-200 cursor-pointer shadow-sm select-none ${
-                  isSelected
-                    ? 'ring-2 ring-emerald-500 border-emerald-500/50 shadow-md scale-[1.01]'
-                    : 'border-zinc-200/90 dark:border-zinc-800/90 hover:border-zinc-300 dark:hover:border-zinc-700 hover:scale-[1.005]'
-                }`}
-              >
-                {/* Brand color stripe */}
-                <div
-                  className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
-                  style={{ backgroundColor: account.color }}
-                />
-
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider font-semibold text-zinc-400 block">
-                      {account.bank}
-                    </span>
-                    <h3 className="text-sm font-bold text-zinc-900 dark:text-white leading-snug">
-                      {account.name}
-                    </h3>
-                  </div>
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700/60 shrink-0">
-                    {accountTypeLabels[account.accountType] || 'Conta'}
-                  </span>
-                </div>
-
-                {/* Saldo Atual */}
-                <div className="my-3">
-                  <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block">
-                    Saldo Disponível
-                  </span>
-                  <div className="text-xl font-bold font-mono-numbers text-zinc-900 dark:text-white">
-                    {formatCurrency(account.currentBalance, privacyMode)}
-                  </div>
-                </div>
-
-                {/* Detalhes de Agência e Movimentações */}
-                <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400">
-                  <span>
-                    {account.agency && account.accountNumber
-                      ? `Ag ${account.agency} • Cc ${account.accountNumber}`
-                      : `${account.transactionsCount} lançamentos`}
-                  </span>
-                  <span className="font-mono-numbers text-[10px] text-zinc-400">
-                    Inicial: {formatCurrency(account.initialBalance, privacyMode)}
-                  </span>
-                </div>
-              </div>
-            )
-          })}
+          {detailedAccounts.map((account) => (
+            <BankAccountVisual
+              key={account.id}
+              account={account}
+              privacyMode={privacyMode}
+              isSelected={activeAccount?.id === account.id}
+              onClick={() => setSelectedAccountId(account.id)}
+            />
+          ))}
         </div>
       </div>
 

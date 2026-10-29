@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import type { BankAccount, AccountType } from '../types'
-import { X, Plus, Landmark } from 'lucide-react'
+import { BANK_PRESETS, getBankBranding } from '../lib/bankBranding'
+import { BankAccountVisual } from './BankAccountVisual'
+import { X, Plus, Landmark, Sparkles } from 'lucide-react'
 
 interface NewAccountModalProps {
   isOpen: boolean
@@ -20,25 +22,29 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
 
   if (!isOpen) return null
 
-  const bankOptions = [
-    { name: 'Itaú Unibanco', defaultColor: '#EC7000' },
-    { name: 'BTG Pactual', defaultColor: '#002244' },
-    { name: 'Nubank', defaultColor: '#820AD1' },
-    { name: 'XP Investimentos', defaultColor: '#000000' },
-    { name: 'Bradesco Prime', defaultColor: '#CC092F' },
-    { name: 'Santander Select', defaultColor: '#EC0000' },
-    { name: 'Banco do Brasil', defaultColor: '#FDF000' },
-    { name: 'C6 Bank', defaultColor: '#242424' },
-    { name: 'Banco Inter', defaultColor: '#FF7A00' },
-    { name: 'Caixa Econômica', defaultColor: '#0066B3' },
-  ]
-
-  const handleBankChange = (selectedBank: string) => {
-    setBank(selectedBank)
-    const found = bankOptions.find((b) => b.name === selectedBank)
-    if (found) {
-      setColor(found.defaultColor)
+  const handleSelectPreset = (preset: typeof BANK_PRESETS[0]) => {
+    setBank(preset.name)
+    setColor(preset.primaryColor)
+    if (!name || BANK_PRESETS.some((p) => name === `${p.name} Principal` || name === `${p.shortName} Conta`)) {
+      setName(`${preset.shortName} Conta Principal`)
     }
+  }
+
+  const numBalance = parseFloat(initialBalance) || 0
+
+  // Preview dinâmico da conta com o design do banco
+  const previewAccount: BankAccount & { currentBalance: number } = {
+    id: 'preview_acc',
+    name: name.trim() || `${bank} Conta`,
+    bank: bank.trim() || 'Banco',
+    accountType,
+    initialBalance: numBalance,
+    currentBalance: numBalance,
+    color,
+    agency: agency.trim() || undefined,
+    accountNumber: accountNumber.trim() || undefined,
+    notes: notes.trim() || undefined,
+    createdAt: new Date().toISOString(),
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -49,7 +55,7 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
       name: name.trim(),
       bank: bank.trim(),
       accountType,
-      initialBalance: parseFloat(initialBalance) || 0,
+      initialBalance: numBalance,
       color,
       agency: agency.trim() || undefined,
       accountNumber: accountNumber.trim() || undefined,
@@ -60,8 +66,8 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md">
-      <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl p-6 text-zinc-800 dark:text-zinc-200 animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md overflow-y-auto">
+      <div className="w-full max-w-xl rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl p-6 text-zinc-800 dark:text-zinc-200 animate-in fade-in zoom-in-95 duration-200 my-8">
         
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-zinc-200 dark:border-zinc-800">
@@ -72,7 +78,7 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
             <div>
               <h2 className="text-base font-bold text-zinc-900 dark:text-white">Cadastrar Conta Bancária</h2>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                Gerencie contas correntes, investimentos e reservas com conciliação
+                O cartão será estilizado automaticamente com o design oficial do banco escolhido
               </p>
             </div>
           </div>
@@ -86,11 +92,48 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
           
+          {/* Live Preview do Cartão da Conta Bancária */}
+          <div className="flex flex-col items-center justify-center py-2">
+            <span className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500 mb-2 flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-emerald-500" /> Design Oficial da Instituição
+            </span>
+            <div className="w-full max-w-[340px]">
+              <BankAccountVisual account={previewAccount} />
+            </div>
+          </div>
+
+          {/* Seleção Rápida de Bancos Populares */}
+          <div>
+            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">
+              Escolha Rápida do Banco (Aplica o design oficial)
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              {BANK_PRESETS.map((preset) => {
+                const isSelected = getBankBranding(bank).id === preset.id
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => handleSelectPreset(preset)}
+                    className={`p-2 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                      isSelected
+                        ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 border-emerald-500 ring-2 ring-emerald-500/30 shadow-sm'
+                        : 'bg-zinc-50 dark:bg-zinc-800/60 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:border-zinc-300'
+                    }`}
+                  >
+                    <span className={`w-2.5 h-2.5 rounded-full`} style={{ backgroundColor: preset.primaryColor }} />
+                    <span className="truncate">{preset.shortName}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
           {/* Nome da Conta e Banco */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
-                Nome de Identificação
+                Nome de Identificação da Conta
               </label>
               <input
                 type="text"
@@ -104,19 +147,16 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
 
             <div>
               <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
-                Instituição Financeira
+                Nome do Banco / Instituição
               </label>
-              <select
+              <input
+                type="text"
+                required
                 value={bank}
-                onChange={(e) => handleBankChange(e.target.value)}
-                className="w-full bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-zinc-200 px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
-              >
-                {bankOptions.map((b) => (
-                  <option key={b.name} value={b.name}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(e) => setBank(e.target.value)}
+                placeholder="Ex: Itaú, BTG, Nubank, Santander..."
+                className="w-full bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-white px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              />
             </div>
           </div>
 
@@ -134,7 +174,8 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
                 <option value="checking">Conta Corrente / Movimentação</option>
                 <option value="investment">Conta de Investimentos</option>
                 <option value="savings">Poupança / Reserva de Emergência</option>
-                <option value="cash">Dinheiro em Espécie / Carteira</option>
+                <option value="salary">Conta Salário</option>
+                <option value="digital_wallet">Carteira Digital</option>
               </select>
             </div>
 
