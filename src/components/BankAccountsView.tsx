@@ -306,8 +306,15 @@ export function BankAccountsView({
                           {isPaid ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
                         </button>
                         <div>
-                          <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-200 group-hover:text-black dark:group-hover:text-white">
-                            {tx.description}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-200 group-hover:text-black dark:group-hover:text-white">
+                              {tx.description}
+                            </span>
+                            {tx.cardStatementName && (
+                              <span className="text-[10px] font-mono font-medium px-2 py-0.2 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                                {tx.cardStatementName}
+                              </span>
+                            )}
                           </div>
                           <div className="text-[11px] text-zinc-500 flex items-center gap-2 mt-0.5">
                             <span className="font-semibold text-zinc-700 dark:text-zinc-300">

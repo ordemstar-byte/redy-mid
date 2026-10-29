@@ -50,7 +50,8 @@ export interface Category {
 
 export interface Transaction {
   id: string
-  description: string
+  description: string // Descrição do gasto (com o que gastou)
+  cardStatementName?: string // Nome de como aparece na fatura do cartão (ex: MP*PADARIA, PAG*RESTAURANTE)
   amount: number
   type: TransactionType
   paymentMethod: PaymentMethod

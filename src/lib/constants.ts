@@ -210,6 +210,7 @@ export const generateInitialTransactions = (): Transaction[] => {
     {
       id: 'tx_card_xp_1',
       description: 'MacBook Pro M3 Max - Equipamento Tech',
+      cardStatementName: 'APPLE STORE SP MOR',
       amount: 2150.00,
       type: 'expense',
       paymentMethod: 'credit_card',
@@ -229,6 +230,7 @@ export const generateInitialTransactions = (): Transaction[] => {
     {
       id: 'tx_card_xp_2',
       description: 'Passagens Aéreas - São Paulo / Lisboa',
+      cardStatementName: 'TAP AIR PORTUGAL',
       amount: 1480.00,
       type: 'expense',
       paymentMethod: 'credit_card',
@@ -248,6 +250,7 @@ export const generateInitialTransactions = (): Transaction[] => {
     {
       id: 'tx_card_xp_3',
       description: 'Jantar Executivo Fasano Jardins',
+      cardStatementName: 'FASANO REST GRP',
       amount: 890.00,
       type: 'expense',
       paymentMethod: 'credit_card',
@@ -268,6 +271,7 @@ export const generateInitialTransactions = (): Transaction[] => {
     {
       id: 'tx_card_nu_1',
       description: 'Supermercado St. Marche / Empório',
+      cardStatementName: 'PAG*STMARCHE HIGIEN',
       amount: 1240.60,
       type: 'expense',
       paymentMethod: 'credit_card',
@@ -286,6 +290,7 @@ export const generateInitialTransactions = (): Transaction[] => {
     {
       id: 'tx_card_nu_2',
       description: 'Assinaturas Cloud & AI (Claude Pro, OpenAI, AWS)',
+      cardStatementName: 'OPENAI *CHATGPT SUBS',
       amount: 520.00,
       type: 'expense',
       paymentMethod: 'credit_card',
@@ -304,6 +309,7 @@ export const generateInitialTransactions = (): Transaction[] => {
     {
       id: 'tx_card_nu_3',
       description: 'Farmácia & Vitaminas Puras',
+      cardStatementName: 'DROGARIA SAO PAULO 04',
       amount: 340.20,
       type: 'expense',
       paymentMethod: 'credit_card',
@@ -324,6 +330,7 @@ export const generateInitialTransactions = (): Transaction[] => {
     {
       id: 'tx_card_itau_1',
       description: 'Seguro Automóvel Porto Seguro (7/10x)',
+      cardStatementName: 'PORTO SEGURO CIA SE',
       amount: 480.00,
       type: 'expense',
       paymentMethod: 'credit_card',
@@ -343,6 +350,7 @@ export const generateInitialTransactions = (): Transaction[] => {
     {
       id: 'tx_card_itau_2',
       description: 'Academia & Personal Trainer Mensal',
+      cardStatementName: 'BIO RITMO PAULISTA',
       amount: 950.00,
       type: 'expense',
       paymentMethod: 'credit_card',

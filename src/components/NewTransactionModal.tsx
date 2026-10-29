@@ -25,6 +25,7 @@ export function NewTransactionModal({
 
   const [type, setType] = useState<TransactionType>('expense')
   const [description, setDescription] = useState('')
+  const [cardStatementName, setCardStatementName] = useState('')
   const [amount, setAmount] = useState<string>('')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('credit_card')
   const [creditCardId, setCreditCardId] = useState<string>(cards[0]?.id || '')
@@ -62,6 +63,7 @@ export function NewTransactionModal({
     onSave(
       {
         description: description.trim(),
+        cardStatementName: isCard && cardStatementName.trim() ? cardStatementName.trim() : undefined,
         amount: numAmount,
         type,
         paymentMethod,
@@ -141,14 +143,14 @@ export function NewTransactionModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
-                Descrição do Lançamento
+                Descrição do Gasto (com o que gastou)
               </label>
               <input
                 type="text"
                 required
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Ex: Assinatura OpenAI, Mercado..."
+                placeholder="Ex: Almoço executivo no restaurante, Mercado do mês, Monitor..."
                 className="w-full bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-white px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
               />
             </div>
@@ -293,6 +295,28 @@ export function NewTransactionModal({
                   </label>
                 </div>
               )}
+
+              {/* Nome como aparece na fatura do cartão */}
+              <div className="pt-2 border-t border-purple-200/60 dark:border-purple-900/40">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[11px] font-semibold text-purple-900 dark:text-purple-300">
+                    Nome na Fatura do Cartão (como vem no extrato)
+                  </label>
+                  <span className="text-[10px] text-zinc-400">
+                    Opcional • Conciliação
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  value={cardStatementName}
+                  onChange={(e) => setCardStatementName(e.target.value)}
+                  placeholder="Ex: PAG*OUTBACK 04, MP*PADARIA-REAL, IFOOD*PEDIDO..."
+                  className="w-full bg-white dark:bg-zinc-900 font-mono text-xs text-zinc-900 dark:text-zinc-200 px-3 py-2 rounded-xl border border-purple-300 dark:border-purple-800/80 focus:outline-none focus:ring-1 focus:ring-purple-500 placeholder:text-zinc-400"
+                />
+                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">
+                  Permite identificar compras quando a cobrança na fatura vem com sigla, razão social ou intermediador diferente do nome do estabelecimento.
+                </p>
+              </div>
             </div>
           )}
 

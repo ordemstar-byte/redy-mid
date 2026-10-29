@@ -176,6 +176,7 @@ export function useCreditCards({ cards, transactions }: UseCreditCardsProps) {
       cardName: string
       cardId: string
       description: string
+      cardStatementName?: string
       totalInstallments: number
       paidInstallments: number
       remainingInstallments: number
@@ -193,6 +194,7 @@ export function useCreditCards({ cards, transactions }: UseCreditCardsProps) {
           cardName: card?.name || 'Cartão',
           cardId: tx.creditCardId || '',
           description: tx.description.replace(/\s\(\d+\/\d+x\)/, ''),
+          cardStatementName: tx.cardStatementName,
           totalInstallments: tx.installmentsTotal || 1,
           paidInstallments: 0,
           remainingInstallments: 0,

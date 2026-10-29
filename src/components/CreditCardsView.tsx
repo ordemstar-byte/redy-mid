@@ -21,6 +21,7 @@ interface CreditCardsViewProps {
     cardName: string
     cardId: string
     description: string
+    cardStatementName?: string
     totalInstallments: number
     paidInstallments: number
     remainingInstallments: number
@@ -351,8 +352,15 @@ export function CreditCardsView({
                         <CreditCardIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                       </div>
                       <div>
-                        <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-200 group-hover:text-black dark:group-hover:text-white transition-colors">
-                          {tx.description}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-200 group-hover:text-black dark:group-hover:text-white transition-colors">
+                            {tx.description}
+                          </span>
+                          {tx.cardStatementName && (
+                            <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-md bg-purple-100/70 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 shadow-2xs">
+                              Na Fatura: {tx.cardStatementName}
+                            </span>
+                          )}
                         </div>
                         <div className="text-[11px] text-zinc-500 flex items-center gap-2 mt-0.5">
                           <span>{tx.category}</span>
@@ -427,7 +435,14 @@ export function CreditCardsView({
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-200">{inst.description}</h4>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-200">{inst.description}</h4>
+                      {inst.cardStatementName && (
+                        <span className="text-[10px] font-mono font-medium px-2 py-0.2 rounded bg-purple-100/70 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+                          {inst.cardStatementName}
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[11px] text-purple-600 dark:text-purple-400 font-medium block mt-0.5">
                       {inst.cardName} • {inst.category}
                     </span>

@@ -210,6 +210,7 @@ export function useFinanceStore() {
           newTransactions.push({
             id: `tx_${Date.now()}_inst_${i}`,
             description: `${data.description} (${i}/${totalInstallments}x)`,
+            cardStatementName: data.cardStatementName,
             amount: installmentAmount,
             type: data.type,
             paymentMethod: data.paymentMethod,

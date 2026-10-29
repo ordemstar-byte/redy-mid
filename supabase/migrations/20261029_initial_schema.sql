@@ -88,6 +88,7 @@ CREATE TABLE IF NOT EXISTS public.transactions (
     id TEXT PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE DEFAULT auth.uid(),
     description TEXT NOT NULL,
+    card_statement_name TEXT,
     amount NUMERIC(14, 2) NOT NULL,
     type TEXT NOT NULL CHECK (type IN ('income', 'expense')),
     payment_method TEXT NOT NULL,

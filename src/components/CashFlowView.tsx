@@ -43,9 +43,10 @@ export function CashFlowView({
   // Filtros aplicados
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx) => {
-      // Busca textual
+      // Busca textual por descrição, nome na fatura ou categoria
       const matchesSearch =
         tx.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (tx.cardStatementName && tx.cardStatementName.toLowerCase().includes(searchTerm.toLowerCase())) ||
         tx.category.toLowerCase().includes(searchTerm.toLowerCase())
 
       // Filtro de Tipo
@@ -306,8 +307,15 @@ export function CashFlowView({
 
                       {/* Descrição & Método */}
                       <td className="py-3 px-3">
-                        <div className="font-semibold text-zinc-900 dark:text-zinc-200 group-hover:text-black dark:group-hover:text-white transition-colors">
-                          {tx.description}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold text-zinc-900 dark:text-zinc-200 group-hover:text-black dark:group-hover:text-white transition-colors">
+                            {tx.description}
+                          </span>
+                          {tx.cardStatementName && (
+                            <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-md bg-purple-100/70 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 shadow-2xs">
+                              Fatura: {tx.cardStatementName}
+                            </span>
+                          )}
                         </div>
                         <div className="text-[11px] text-zinc-500 flex items-center gap-1.5 mt-0.5">
                           {isCard ? (
