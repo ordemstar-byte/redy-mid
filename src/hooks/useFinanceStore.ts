@@ -123,7 +123,7 @@ export function useFinanceStore() {
     return 'cashflow'
   })
 
-  // Sincronização de inicialização com Supabase (Fonte da Verdade)
+  // Sincronização em Tempo Real com Supabase (Fonte da Verdade Absoluta)
   useEffect(() => {
     let isMounted = true
 
@@ -138,67 +138,14 @@ export function useFinanceStore() {
 
         if (!isMounted) return
 
-        // 1. Contas: Se existirem no Supabase, são a verdade. Senão, envia as locais.
-        if (remoteAccounts.length > 0) {
-          setAccounts(remoteAccounts)
-          localStorage.setItem(STORAGE_KEYS.ACCOUNTS, JSON.stringify(remoteAccounts))
-        } else {
-          const localStr = localStorage.getItem(STORAGE_KEYS.ACCOUNTS)
-          if (localStr) {
-            try {
-              const localParsed: BankAccount[] = JSON.parse(localStr)
-              if (localParsed.length > 0) {
-                for (const acc of localParsed) {
-                  await saveAccountToSupabase(acc)
-                }
-              }
-            } catch {
-              // ignore
-            }
-          }
-        }
-
-        // 2. Cartões: Se existirem no Supabase, sincroniza. Senão envia os locais.
-        if (remoteCards.length > 0) {
-          setCards(remoteCards)
-          localStorage.setItem(STORAGE_KEYS.CARDS, JSON.stringify(remoteCards))
-        } else {
-          const localStr = localStorage.getItem(STORAGE_KEYS.CARDS)
-          if (localStr) {
-            try {
-              const localParsed: CreditCard[] = JSON.parse(localStr)
-              if (localParsed.length > 0) {
-                for (const c of localParsed) {
-                  await saveCardToSupabase(c)
-                }
-              }
-            } catch {
-              // ignore
-            }
-          }
-        }
-
-        // 3. Transações: Se existirem no Supabase, sincroniza. Senão envia as locais.
-        if (remoteTxs.length > 0) {
-          setTransactions(remoteTxs)
-          localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(remoteTxs))
-        } else {
-          const localStr = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS)
-          if (localStr) {
-            try {
-              const localParsed: Transaction[] = JSON.parse(localStr)
-              if (localParsed.length > 0) {
-                await saveTransactionsBatchToSupabase(localParsed)
-              }
-            } catch {
-              // ignore
-            }
-          }
-        }
-
+        // Supabase é SEMPRE a verdade absoluta em tempo real.
+        // Se no Supabase for vazio [], reflete vazio sem ressuscitar cache local!
+        setAccounts(remoteAccounts)
+        setCards(remoteCards)
+        setTransactions(remoteTxs)
         setIsCloudConnected(true)
       } catch (err) {
-        console.error('Erro na sincronização inicial do Supabase:', err)
+        console.error('Erro na sincronização com Supabase:', err)
         setIsCloudConnected(false)
       } finally {
         if (isMounted) setIsSyncing(false)
@@ -207,8 +154,20 @@ export function useFinanceStore() {
 
     initialCloudSync()
 
+    // Auto-recarga em tempo real sempre que o usuário voltar ao app ou focar a janela
+    const handleFocusSync = () => {
+      if (document.visibilityState === 'visible') {
+        initialCloudSync()
+      }
+    }
+
+    window.addEventListener('focus', handleFocusSync)
+    document.addEventListener('visibilitychange', handleFocusSync)
+
     return () => {
       isMounted = false
+      window.removeEventListener('focus', handleFocusSync)
+      document.removeEventListener('visibilitychange', handleFocusSync)
     }
   }, [])
 
