@@ -25,17 +25,27 @@ export function BankAccountVisual({
 }: BankAccountVisualProps) {
   const brand = getBankBranding(account.bank)
   const balance = account.currentBalance ?? account.initialBalance
+  const hasCustomBg = Boolean(account.customBgColor)
 
   return (
     <div
       onClick={onClick}
       className={`relative w-full rounded-2xl p-5 text-white transition-all duration-300 cursor-pointer overflow-hidden select-none border shadow-lg ${
-        brand.bgClass
+        hasCustomBg ? 'border-white/15' : brand.bgClass
       } ${
         isSelected
           ? 'ring-2 ring-emerald-500 shadow-2xl scale-[1.02]'
           : 'hover:scale-[1.01] opacity-95 hover:opacity-100 hover:shadow-xl'
       }`}
+      style={
+        hasCustomBg && account.customBgColor
+          ? {
+              background: `radial-gradient(ellipse at top right, ${account.customBgColor} 0%, #090a0f 85%)`,
+              borderColor: `${account.customBgColor}77`,
+              boxShadow: `0 12px 28px -6px ${account.customBgColor}40`,
+            }
+          : undefined
+      }
     >
       {/* Sombra de reflexo de luz e acabamento metálico */}
       <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.04] to-transparent pointer-events-none" />

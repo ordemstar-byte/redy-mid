@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import type { BankAccount, AccountType } from '../types'
-import { BANK_PRESETS, getBankBranding } from '../lib/bankBranding'
+import { BANK_PRESETS, getBankBranding, type BankBrandConfig } from '../lib/bankBranding'
 import { BankAccountVisual } from './BankAccountVisual'
-import { X, Plus, Landmark, Sparkles } from 'lucide-react'
+import { X, Plus, Landmark, Sparkles, Palette, RotateCcw } from 'lucide-react'
 
 interface NewAccountModalProps {
   isOpen: boolean
@@ -10,29 +10,45 @@ interface NewAccountModalProps {
   onSave: (account: Omit<BankAccount, 'id' | 'createdAt'>) => void
 }
 
+const COLOR_SWATCHES = [
+  { name: 'Safra Gold', hex: '#C5A059' },
+  { name: 'Obsidian Black', hex: '#18181B' },
+  { name: 'Deep Navy', hex: '#0B132B' },
+  { name: 'Esmeralda', hex: '#064E3B' },
+  { name: 'Rubi Imperial', hex: '#7F1D1D' },
+  { name: 'Roxo Veludo', hex: '#4C1D95' },
+  { name: 'Azul Safira', hex: '#1E3A8A' },
+  { name: 'Verde Ton', hex: '#00D05E' },
+  { name: 'Rosa Cakto', hex: '#FF3366' },
+  { name: 'Chama Laranja', hex: '#9A3412' },
+]
+
 export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProps) {
   const [name, setName] = useState('')
-  const [bank, setBank] = useState('Itaú Unibanco')
+  const [bank, setBank] = useState('Banco Safra')
   const [accountType, setAccountType] = useState<AccountType>('checking')
   const [initialBalance, setInitialBalance] = useState<string>('5000')
-  const [color, setColor] = useState('#EC7000')
+  const [color, setColor] = useState('#C5A059')
+  const [customBgColor, setCustomBgColor] = useState<string | undefined>(undefined)
   const [agency, setAgency] = useState('')
   const [accountNumber, setAccountNumber] = useState('')
   const [notes, setNotes] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'bank' | 'gateway'>('all')
 
   if (!isOpen) return null
 
-  const handleSelectPreset = (preset: typeof BANK_PRESETS[0]) => {
+  const handleSelectPreset = (preset: BankBrandConfig) => {
     setBank(preset.name)
     setColor(preset.primaryColor)
-    if (!name || BANK_PRESETS.some((p) => name === `${p.name} Principal` || name === `${p.shortName} Conta`)) {
+    // Se o usuário não tinha uma cor customizada forçada, mantém padrão oficial
+    if (!name || BANK_PRESETS.some((p) => name === `${p.name} Principal` || name === `${p.shortName} Conta` || name === `${p.shortName} Conta Principal`)) {
       setName(`${preset.shortName} Conta Principal`)
     }
   }
 
   const numBalance = parseFloat(initialBalance) || 0
 
-  // Preview dinâmico da conta com o design do banco
+  // Preview dinâmico da conta com o design do banco e cor customizada se selecionada
   const previewAccount: BankAccount & { currentBalance: number } = {
     id: 'preview_acc',
     name: name.trim() || `${bank} Conta`,
@@ -41,6 +57,7 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
     initialBalance: numBalance,
     currentBalance: numBalance,
     color,
+    customBgColor,
     agency: agency.trim() || undefined,
     accountNumber: accountNumber.trim() || undefined,
     notes: notes.trim() || undefined,
@@ -57,6 +74,7 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
       accountType,
       initialBalance: numBalance,
       color,
+      customBgColor: customBgColor || undefined,
       agency: agency.trim() || undefined,
       accountNumber: accountNumber.trim() || undefined,
       notes: notes.trim() || undefined,
@@ -65,20 +83,27 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
     onClose()
   }
 
+  const filteredPresets = BANK_PRESETS.filter((p) => {
+    if (categoryFilter === 'all') return true
+    if (categoryFilter === 'bank') return p.category === 'bank' || p.category === 'investment'
+    if (categoryFilter === 'gateway') return p.category === 'gateway'
+    return true
+  })
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md overflow-y-auto">
-      <div className="w-full max-w-xl rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl p-6 text-zinc-800 dark:text-zinc-200 animate-in fade-in zoom-in-95 duration-200 my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md overflow-y-auto">
+      <div className="w-full max-w-xl max-h-[92vh] flex flex-col rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl text-zinc-800 dark:text-zinc-200 animate-in fade-in zoom-in-95 duration-200 my-auto overflow-hidden">
         
-        {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-zinc-200 dark:border-zinc-800">
+        {/* Header fixo */}
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
               <Landmark className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-zinc-900 dark:text-white">Cadastrar Conta Bancária</h2>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                O cartão será estilizado automaticamente com o design oficial do banco escolhido
+              <h2 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-white">Cadastrar Conta Bancária</h2>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                Design oficial automático para Bancos, Safra, Ton, Cakto e Gateways
               </p>
             </div>
           </div>
@@ -90,42 +115,151 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+        {/* Corpo rolável */}
+        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
           
           {/* Live Preview do Cartão da Conta Bancária */}
-          <div className="flex flex-col items-center justify-center py-2">
+          <div className="flex flex-col items-center justify-center py-1">
             <span className="text-[10px] uppercase tracking-wider font-semibold text-zinc-500 mb-2 flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-emerald-500" /> Design Oficial da Instituição
+              <Sparkles className="w-3 h-3 text-emerald-500" /> Preview com Acabamento em Tempo Real
             </span>
             <div className="w-full max-w-[340px]">
               <BankAccountVisual account={previewAccount} />
             </div>
           </div>
 
-          {/* Seleção Rápida de Bancos Populares */}
-          <div>
-            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">
-              Escolha Rápida do Banco (Aplica o design oficial)
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-              {BANK_PRESETS.map((preset) => {
+          {/* Seleção Rápida de Bancos & Gateways com Filtros */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Escolha o Banco ou Gateway de Pagamento
+              </label>
+              <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800/80 p-0.5 rounded-lg text-[10px] font-medium">
+                <button
+                  type="button"
+                  onClick={() => setCategoryFilter('all')}
+                  className={`px-2 py-0.5 rounded-md transition-colors ${
+                    categoryFilter === 'all'
+                      ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-xs font-semibold'
+                      : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
+                  }`}
+                >
+                  Todos ({BANK_PRESETS.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCategoryFilter('bank')}
+                  className={`px-2 py-0.5 rounded-md transition-colors ${
+                    categoryFilter === 'bank'
+                      ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-xs font-semibold'
+                      : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
+                  }`}
+                >
+                  Bancos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCategoryFilter('gateway')}
+                  className={`px-2 py-0.5 rounded-md transition-colors ${
+                    categoryFilter === 'gateway'
+                      ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-xs font-semibold'
+                      : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
+                  }`}
+                >
+                  Gateways / Ton
+                </button>
+              </div>
+            </div>
+
+            {/* Grid de presets */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-1.5 max-h-36 overflow-y-auto p-1 rounded-xl bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-800/80">
+              {filteredPresets.map((preset) => {
                 const isSelected = getBankBranding(bank).id === preset.id
                 return (
                   <button
                     key={preset.id}
                     type="button"
                     onClick={() => handleSelectPreset(preset)}
-                    className={`p-2 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                    className={`p-1.5 rounded-lg border text-[11px] font-semibold flex items-center gap-1.5 transition-all text-left truncate ${
                       isSelected
-                        ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 border-emerald-500 ring-2 ring-emerald-500/30 shadow-sm'
-                        : 'bg-zinc-50 dark:bg-zinc-800/60 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:border-zinc-300'
+                        ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 border-emerald-500 ring-1 ring-emerald-500/50 shadow-xs'
+                        : 'bg-white dark:bg-zinc-800/60 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700/60 hover:border-zinc-300'
                     }`}
                   >
-                    <span className={`w-2.5 h-2.5 rounded-full`} style={{ backgroundColor: preset.primaryColor }} />
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs"
+                      style={{ backgroundColor: preset.primaryColor }}
+                    />
                     <span className="truncate">{preset.shortName}</span>
                   </button>
                 )
               })}
+            </div>
+          </div>
+
+          {/* Opcional: Seletor de Cor de Fundo */}
+          <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800/80 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+                <Palette className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Cor de Fundo do Cartão (Opcional)</span>
+              </label>
+              {customBgColor ? (
+                <button
+                  type="button"
+                  onClick={() => setCustomBgColor(undefined)}
+                  className="text-[10px] text-zinc-500 hover:text-emerald-500 flex items-center gap-1 transition-colors"
+                >
+                  <RotateCcw className="w-2.5 h-2.5" /> Padrão Oficial
+                </button>
+              ) : (
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                  Usando design oficial
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setCustomBgColor(undefined)}
+                className={`px-2 py-1 rounded-lg border text-[10px] font-medium transition-all ${
+                  !customBgColor
+                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold'
+                    : 'border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                }`}
+              >
+                Padrão do Banco
+              </button>
+
+              {COLOR_SWATCHES.map((swatch) => (
+                <button
+                  key={swatch.name}
+                  type="button"
+                  title={swatch.name}
+                  onClick={() => setCustomBgColor(swatch.hex)}
+                  className={`w-6 h-6 rounded-full border transition-all shrink-0 ${
+                    customBgColor === swatch.hex
+                      ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900 scale-110'
+                      : 'border-white/20 hover:scale-105'
+                  }`}
+                  style={{ backgroundColor: swatch.hex }}
+                />
+              ))}
+
+              {/* Seletor Customizado Nativo */}
+              <label
+                title="Escolher qualquer cor personalizada"
+                className="relative flex items-center justify-center w-6 h-6 rounded-full border border-dashed border-zinc-400 dark:border-zinc-600 hover:border-emerald-500 cursor-pointer overflow-hidden text-[9px] font-bold text-zinc-500"
+              >
+                <span>+</span>
+                <input
+                  type="color"
+                  value={customBgColor || '#18181B'}
+                  onChange={(e) => setCustomBgColor(e.target.value)}
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                />
+              </label>
             </div>
           </div>
 
@@ -140,7 +274,7 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: Itaú Personnalité Principal"
+                placeholder="Ex: Safra Conta Principal, Ton Negócios..."
                 className="w-full bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-white px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
               />
             </div>
@@ -154,7 +288,7 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
                 required
                 value={bank}
                 onChange={(e) => setBank(e.target.value)}
-                placeholder="Ex: Itaú, BTG, Nubank, Santander..."
+                placeholder="Ex: Banco Safra, Ton, Cakto, Itaú, Asaas..."
                 className="w-full bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-white px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
               />
             </div>
@@ -174,8 +308,7 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
                 <option value="checking">Conta Corrente / Movimentação</option>
                 <option value="investment">Conta de Investimentos</option>
                 <option value="savings">Poupança / Reserva de Emergência</option>
-                <option value="salary">Conta Salário</option>
-                <option value="digital_wallet">Carteira Digital</option>
+                <option value="cash">Dinheiro em Espécie</option>
               </select>
             </div>
 
@@ -205,7 +338,7 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
                 type="text"
                 value={agency}
                 onChange={(e) => setAgency(e.target.value)}
-                placeholder="Ex: 0842"
+                placeholder="Ex: 0001"
                 className="w-full bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-white px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
               />
             </div>
@@ -218,7 +351,7 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
                 type="text"
                 value={accountNumber}
                 onChange={(e) => setAccountNumber(e.target.value)}
-                placeholder="Ex: 29810-4"
+                placeholder="Ex: 12345-6"
                 className="w-full bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-white px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
               />
             </div>
@@ -233,13 +366,13 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ex: Conta para recebimento de honorários e pagamentos mensais..."
+              placeholder="Ex: Conta de recebimentos de checkout, clientes e maquininha..."
               className="w-full bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-white px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
           </div>
 
-          {/* Botões de Ação */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+          {/* Botões de Ação fixos no rodapé */}
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-200 dark:border-zinc-800">
             <button
               type="button"
               onClick={onClose}

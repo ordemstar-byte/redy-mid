@@ -64,7 +64,7 @@ export function BankAccountsView({
           Nenhuma conta bancária cadastrada
         </h3>
         <p className="text-xs text-zinc-500 max-w-sm mx-auto mt-1 mb-6">
-          Cadastre suas contas no Itaú, BTG, Nubank, Bradesco, etc., para conciliar saldos reais e extratos.
+          Cadastre suas contas no Banco Safra, Itaú, BTG, Ton, Cakto, Asaas, etc., para conciliar saldos reais e extratos.
         </p>
         <button
           onClick={onOpenNewAccount}

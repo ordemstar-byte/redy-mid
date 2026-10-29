@@ -26,6 +26,7 @@ export interface BankAccount {
   accountType: AccountType
   initialBalance: number
   color: string
+  customBgColor?: string // Cor de fundo personalizada opcional
   agency?: string
   accountNumber?: string
   notes?: string
