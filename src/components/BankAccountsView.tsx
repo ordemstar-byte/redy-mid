@@ -34,7 +34,7 @@ interface BankAccountsViewProps {
   onEditAccount?: (account: BankAccount) => void
   onManageAccount?: (account: BankAccount) => void
   onDeleteAccount: (id: string) => void
-  onDeleteTransaction: (id: string) => void
+  onDeleteTransaction: (id: string, deleteSeries?: boolean) => void
   onToggleStatus: (id: string) => void
   onManageTransaction?: (tx: Transaction) => void
   onEditTransaction?: (tx: Transaction) => void
@@ -77,7 +77,7 @@ export function BankAccountsView({
     const tracker = clickTrackers.current.get(tx.id) || { count: 0, time: 0 }
     const diff = now - tracker.time
 
-    if (diff < 500) {
+    if (diff < 800) {
       tracker.count += 1
     } else {
       tracker.count = 1
@@ -402,19 +402,26 @@ export function BankAccountsView({
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
                           <button
                             type="button"
-                            onClick={() => onManageTransaction ? onManageTransaction(tx) : onEditTransaction?.(tx)}
-                            className="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-500 active:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (onManageTransaction) onManageTransaction(tx)
+                              else if (onEditTransaction) onEditTransaction(tx)
+                            }}
+                            className="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-500 active:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors cursor-pointer"
                             title="Gerenciar / Editar lançamento (ou 3 cliques)"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             type="button"
-                            onClick={() => onDeleteTransaction(tx.id)}
-                            className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 active:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onDeleteTransaction(tx.id)
+                            }}
+                            className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 active:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
                             title="Remover lançamento"
                           >
                             <Trash2 className="w-3.5 h-3.5" />

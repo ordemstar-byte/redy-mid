@@ -23,7 +23,7 @@ interface ManageTransactionModalProps {
   cards: CreditCard[]
   accounts: BankAccount[]
   onEdit: (tx: Transaction) => void
-  onDelete: (id: string) => void
+  onDelete: (id: string, deleteSeries?: boolean) => void
   onToggleStatus: (id: string) => void
 }
 
@@ -46,13 +46,16 @@ export function ManageTransactionModal({
   const card = isCard ? cards.find((c) => c.id === transaction.creditCardId) : null
   const account = !isCard && transaction.bankAccountId ? accounts.find((a) => a.id === transaction.bankAccountId) : null
   const isPaid = transaction.status === 'paid'
+  const isInstallmentSeries = Boolean((transaction.installmentsTotal || 1) > 1 && transaction.parentInstallmentId)
 
-  const handleDeleteClick = () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true)
-      return
-    }
-    onDelete(transaction.id)
+  const handleDeleteSingle = () => {
+    onDelete(transaction.id, false)
+    setConfirmDelete(false)
+    onClose()
+  }
+
+  const handleDeleteAllSeries = () => {
+    onDelete(transaction.id, true)
     setConfirmDelete(false)
     onClose()
   }
@@ -201,14 +204,60 @@ export function ManageTransactionModal({
 
         {/* Confirmação de Exclusão */}
         {confirmDelete && (
-          <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800/60 text-xs text-rose-800 dark:text-rose-300 space-y-2">
+          <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800/60 text-xs text-rose-800 dark:text-rose-300 space-y-3 animate-fade-in">
             <div className="flex items-center gap-2 font-bold text-rose-900 dark:text-rose-200">
               <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
               <span>Deseja realmente excluir este lançamento?</span>
             </div>
             <p className="text-[11px] text-rose-700 dark:text-rose-300">
-              Esta ação removerá o registro permanentemente do Supabase e recalculará saldos e limites.
+              Esta ação removerá o registro permanentemente do Supabase e recalculará os limites do cartão e saldos.
             </p>
+
+            {isInstallmentSeries ? (
+              <div className="space-y-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleDeleteSingle}
+                  className="w-full py-2.5 px-3 rounded-lg bg-white dark:bg-zinc-800 border border-rose-200 dark:border-rose-800/80 text-rose-700 dark:text-rose-300 hover:bg-rose-100/60 font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Excluir APENAS esta parcela ({transaction.installmentNumber}/{transaction.installmentsTotal}x)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteAllSeries}
+                  className="w-full py-2.5 px-3 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Excluir TODAS as {transaction.installmentsTotal} parcelas</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  className="w-full py-1.5 text-center text-xs text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 cursor-pointer"
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleDeleteSingle}
+                  className="flex-1 py-2 px-3 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Confirmar Exclusão</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  className="px-3 py-2 text-xs text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 cursor-pointer"
+                >
+                  Cancelar
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -270,34 +319,29 @@ export function ManageTransactionModal({
             </span>
           </button>
 
-          {/* Botão de Exclusão */}
-          <button
-            type="button"
-            onClick={handleDeleteClick}
-            className={`w-full flex items-center justify-between p-3.5 rounded-xl border transition-all cursor-pointer ${
-              confirmDelete
-                ? 'bg-rose-600 text-white border-rose-600 shadow-lg shadow-rose-600/20'
-                : 'bg-zinc-50 dark:bg-zinc-800/60 hover:bg-rose-50 dark:hover:bg-rose-950/30 border-zinc-200 dark:border-zinc-700/80 hover:border-rose-300 dark:hover:border-rose-800 text-zinc-800 dark:text-zinc-100'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                confirmDelete
-                  ? 'bg-white/20 text-white'
-                  : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
-              }`}>
-                <Trash2 className="w-4 h-4" />
+          {/* Botão de Exclusão (quando não estiver com painel de confirmação aberto) */}
+          {!confirmDelete && (
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="w-full flex items-center justify-between p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 hover:bg-rose-50 dark:hover:bg-rose-950/30 border border-zinc-200 dark:border-zinc-700/80 hover:border-rose-300 dark:hover:border-rose-800 text-zinc-800 dark:text-zinc-100 transition-all group cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                  <Trash2 className="w-4 h-4" />
+                </div>
+                <div className="text-left">
+                  <span className="text-xs font-bold block text-rose-600 dark:text-rose-400">
+                    {isInstallmentSeries ? 'Excluir Parcelamento / Parcela' : 'Excluir Lançamento'}
+                  </span>
+                  <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                    {isInstallmentSeries ? 'Escolha excluir uma única parcela ou todas de uma vez' : 'Remove do Supabase e recalcula os limites'}
+                  </span>
+                </div>
               </div>
-              <div className="text-left">
-                <span className={`text-xs font-bold block ${confirmDelete ? 'text-white' : 'text-rose-600 dark:text-rose-400'}`}>
-                  {confirmDelete ? 'Confirmar Exclusão Definitiva' : 'Excluir Lançamento'}
-                </span>
-                <span className={`text-[11px] ${confirmDelete ? 'text-white/80' : 'text-zinc-500 dark:text-zinc-400'}`}>
-                  {confirmDelete ? 'Clique novamente para confirmar a exclusão' : 'Remove do Supabase e recalcula os limites'}
-                </span>
-              </div>
-            </div>
-          </button>
+              <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-rose-500 transition-colors" />
+            </button>
+          )}
         </div>
 
       </div>

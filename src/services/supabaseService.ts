@@ -456,3 +456,35 @@ export async function deleteTransactionFromSupabase(id: string): Promise<boolean
     return false
   }
 }
+
+export async function deleteTransactionsBatchFromSupabase(ids: string[]): Promise<boolean> {
+  if (!isSupabaseConfigured || ids.length === 0) return false
+
+  try {
+    const { error } = await supabase.from('transactions').delete().in('id', ids)
+    if (error) {
+      console.error('Erro ao deletar lote de transações no Supabase:', error.message)
+      return false
+    }
+    return true
+  } catch (err) {
+    console.error('Exceção ao deletar lote de transações no Supabase:', err)
+    return false
+  }
+}
+
+export async function deleteInstallmentSeriesFromSupabase(parentInstallmentId: string): Promise<boolean> {
+  if (!isSupabaseConfigured || !parentInstallmentId) return false
+
+  try {
+    const { error } = await supabase.from('transactions').delete().eq('parent_installment_id', parentInstallmentId)
+    if (error) {
+      console.error('Erro ao deletar parcelamento no Supabase:', error.message)
+      return false
+    }
+    return true
+  } catch (err) {
+    console.error('Exceção ao deletar parcelamento no Supabase:', err)
+    return false
+  }
+}

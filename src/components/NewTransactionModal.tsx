@@ -11,8 +11,8 @@ interface NewTransactionModalProps {
   accounts: BankAccount[]
   onSave: (data: Omit<Transaction, 'id' | 'createdAt'>, generateInstallments: boolean) => void
   editTransaction?: Transaction | null
-  onUpdate?: (id: string, updates: Partial<Transaction>) => void
-  onDelete?: (id: string) => void
+  onUpdate?: (id: string, updates: Partial<Transaction> & { updateSeries?: boolean }) => void
+  onDelete?: (id: string, deleteSeries?: boolean) => void
 }
 
 export function NewTransactionModal({
@@ -39,6 +39,7 @@ export function NewTransactionModal({
   const [category, setCategory] = useState<string>('Supermercado & Feira')
   const [installmentsTotal, setInstallmentsTotal] = useState<number>(1)
   const [generateAllInstallments, setGenerateAllInstallments] = useState(true)
+  const [updateEntireSeries, setUpdateEntireSeries] = useState(true)
   const [date, setDate] = useState(todayStr)
   const [time, setTime] = useState(defaultTime)
   const [dueDate, setDueDate] = useState<string>(todayStr)
@@ -141,6 +142,7 @@ export function NewTransactionModal({
         dueDate: finalDueDate,
         status,
         notes: notes.trim() || undefined,
+        updateSeries: updateEntireSeries,
       })
     } else {
       onSave(
@@ -167,17 +169,6 @@ export function NewTransactionModal({
     }
 
     onClose()
-  }
-
-  const handleDelete = () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true)
-      return
-    }
-    if (editTransaction && onDelete) {
-      onDelete(editTransaction.id)
-      onClose()
-    }
   }
 
   return (
@@ -280,6 +271,21 @@ export function NewTransactionModal({
               />
             </div>
           </div>
+
+          {/* Opção de Atualizar Série Completa de Parcelas */}
+          {isEditing && editTransaction?.parentInstallmentId && (
+            <label className="flex items-center gap-2.5 p-3 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={updateEntireSeries}
+                onChange={(e) => setUpdateEntireSeries(e.target.checked)}
+                className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+              />
+              <span className="text-xs text-purple-900 dark:text-purple-200">
+                Sincronizar alterações de nome/categoria em <strong>todas as {editTransaction.installmentsTotal || 1} parcelas</strong> deste parcelamento
+              </span>
+            </label>
+          )}
 
           {/* Método de Pagamento */}
           <div>
@@ -641,19 +647,60 @@ export function NewTransactionModal({
           {/* Botões de Ação */}
           <div className="flex items-center justify-between gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
             <div>
-              {isEditing && onDelete && (
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                    confirmDelete
-                      ? 'bg-rose-600 text-white shadow-md'
-                      : 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10'
-                  }`}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>{confirmDelete ? 'Confirmar Exclusão?' : 'Excluir'}</span>
-                </button>
+              {isEditing && editTransaction && onDelete && (
+                confirmDelete ? (
+                  editTransaction.parentInstallmentId ? (
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => { onDelete(editTransaction.id, false); onClose(); }}
+                        className="px-2.5 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-[11px] font-semibold border border-rose-200 dark:border-rose-800 cursor-pointer"
+                      >
+                        Excluir só esta parcela
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { onDelete(editTransaction.id, true); onClose(); }}
+                        className="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold shadow-xs cursor-pointer"
+                      >
+                        Excluir TODAS as parcelas
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDelete(false)}
+                        className="px-2 py-1 text-zinc-400 text-xs hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => { onDelete(editTransaction.id, false); onClose(); }}
+                        className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md cursor-pointer"
+                      >
+                        Confirmar Exclusão
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDelete(false)}
+                        className="px-2 py-1 text-zinc-400 text-xs hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  )
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(true)}
+                    className="px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Excluir</span>
+                  </button>
+                )
               )}
             </div>
 

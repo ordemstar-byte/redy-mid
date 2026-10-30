@@ -23,10 +23,12 @@ interface CashFlowViewProps {
   cards: CreditCard[]
   privacyMode: boolean
   onToggleStatus: (id: string) => void
-  onDeleteTransaction: (id: string) => void
+  onDeleteTransaction: (id: string, deleteSeries?: boolean) => void
   onOpenNewTransaction: () => void
   onManageTransaction?: (tx: Transaction) => void
   onEditTransaction?: (tx: Transaction) => void
+  totalTransactionsCount?: number
+  onResetPeriodToAll?: () => void
 }
 
 export function CashFlowView({
@@ -40,6 +42,8 @@ export function CashFlowView({
   onOpenNewTransaction,
   onManageTransaction,
   onEditTransaction,
+  totalTransactionsCount,
+  onResetPeriodToAll,
 }: CashFlowViewProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense' | 'card'>('all')
@@ -55,7 +59,7 @@ export function CashFlowView({
     const tracker = clickTrackers.current.get(tx.id) || { count: 0, time: 0 }
     const diff = now - tracker.time
 
-    if (diff < 500) {
+    if (diff < 800) {
       tracker.count += 1
     } else {
       tracker.count = 1
@@ -306,10 +310,22 @@ export function CashFlowView({
               {filteredTransactions.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-zinc-400 dark:text-zinc-500">
-                    <p className="font-medium">Nenhum lançamento encontrado com os filtros atuais.</p>
+                    <p className="font-medium text-xs sm:text-sm">Nenhum lançamento encontrado para o período selecionado.</p>
+                    {Boolean(totalTransactionsCount && totalTransactionsCount > 0 && onResetPeriodToAll) && (
+                      <div className="mt-2 text-xs">
+                        <span className="text-zinc-500">Você possui <strong>{totalTransactionsCount}</strong> lançamentos em outros meses/períodos. </span>
+                        <button
+                          type="button"
+                          onClick={onResetPeriodToAll}
+                          className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer ml-1"
+                        >
+                          Ver Todos os Lançamentos
+                        </button>
+                      </div>
+                    )}
                     <button
                       onClick={onOpenNewTransaction}
-                      className="mt-3 text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline"
+                      className="mt-3 text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline block mx-auto cursor-pointer"
                     >
                       + Cadastrar novo lançamento agora
                     </button>
@@ -409,20 +425,32 @@ export function CashFlowView({
 
                       {/* Ações */}
                       <td className="py-3 px-3 text-center">
-                        <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center justify-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
                           <button
                             type="button"
-                            onClick={() => onManageTransaction ? onManageTransaction(tx) : onEditTransaction?.(tx)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (onManageTransaction) onManageTransaction(tx)
+                              else if (onEditTransaction) onEditTransaction(tx)
+                            }}
                             title="Gerenciar / Editar lançamento (ou 3 cliques)"
-                            className="p-1 rounded text-zinc-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                            className="p-1 rounded text-zinc-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors cursor-pointer"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             type="button"
-                            onClick={() => onDeleteTransaction(tx.id)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (tx.parentInstallmentId && (tx.installmentsTotal || 1) > 1) {
+                                if (onManageTransaction) onManageTransaction(tx)
+                                else onDeleteTransaction(tx.id)
+                              } else {
+                                onDeleteTransaction(tx.id)
+                              }
+                            }}
                             title="Excluir lançamento"
-                            className="p-1 rounded text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                            className="p-1 rounded text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -440,10 +468,22 @@ export function CashFlowView({
         <div className="md:hidden divide-y divide-zinc-100 dark:divide-zinc-800/60">
           {filteredTransactions.length === 0 ? (
             <div className="py-12 text-center text-zinc-400 dark:text-zinc-500 px-4">
-              <p className="font-medium text-xs sm:text-sm">Nenhum lançamento encontrado com os filtros atuais.</p>
+              <p className="font-medium text-xs sm:text-sm">Nenhum lançamento encontrado para o período selecionado.</p>
+              {Boolean(totalTransactionsCount && totalTransactionsCount > 0 && onResetPeriodToAll) && (
+                <div className="mt-2 text-xs">
+                  <span className="text-zinc-500">Você possui <strong>{totalTransactionsCount}</strong> lançamentos em outros meses. </span>
+                  <button
+                    type="button"
+                    onClick={onResetPeriodToAll}
+                    className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer block mx-auto mt-1"
+                  >
+                    Ver Todos os Lançamentos
+                  </button>
+                </div>
+              )}
               <button
                 onClick={onOpenNewTransaction}
-                className="mt-3 text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline block mx-auto py-1"
+                className="mt-3 text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline block mx-auto py-1 cursor-pointer"
               >
                 + Cadastrar lançamento agora
               </button>
@@ -518,16 +558,28 @@ export function CashFlowView({
                     </div>
                     <button
                       type="button"
-                      onClick={() => onManageTransaction ? onManageTransaction(tx) : onEditTransaction?.(tx)}
-                      className="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-500 active:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (onManageTransaction) onManageTransaction(tx)
+                        else if (onEditTransaction) onEditTransaction(tx)
+                      }}
+                      className="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-500 active:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors cursor-pointer"
                       title="Editar (ou 3 cliques)"
                     >
                       <Edit3 className="w-4 h-4" />
                     </button>
                     <button
                       type="button"
-                      onClick={() => onDeleteTransaction(tx.id)}
-                      className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 active:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (tx.parentInstallmentId && (tx.installmentsTotal || 1) > 1) {
+                          if (onManageTransaction) onManageTransaction(tx)
+                          else onDeleteTransaction(tx.id)
+                        } else {
+                          onDeleteTransaction(tx.id)
+                        }
+                      }}
+                      className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 active:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
                       title="Excluir"
                     >
                       <Trash2 className="w-4 h-4" />

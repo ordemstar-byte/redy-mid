@@ -16,6 +16,7 @@ import {
   saveTransactionsBatchToSupabase,
   updateTransactionInSupabase,
   deleteTransactionFromSupabase,
+  deleteInstallmentSeriesFromSupabase,
 } from '../services/supabaseService'
 import { isSupabaseConfigured } from '../lib/supabase'
 
@@ -429,37 +430,92 @@ export function useFinanceStore() {
   )
 
   const updateTransaction = useCallback(
-    (id: string, updates: Partial<Transaction>) => {
-      const finalUpdates = { ...updates }
+    (id: string, updates: Partial<Transaction> & { updateSeries?: boolean }) => {
+      const { updateSeries, ...restUpdates } = updates
+      const finalUpdates = { ...restUpdates }
 
-      setTransactions((prev) =>
-        prev.map((tx) => {
+      setTransactions((prev) => {
+        const target = prev.find((tx) => tx.id === id)
+        if (!target) return prev
+
+        // Atualização em lote se o usuário estiver editando toda a série de parcelas
+        if (updateSeries && target.parentInstallmentId) {
+          const pId = target.parentInstallmentId
+          const baseDesc = restUpdates.description
+            ? restUpdates.description.replace(/\s\(\d+\/\d+x\)/, '').trim()
+            : ''
+
+          const updatedBatch: Transaction[] = []
+
+          const newTxs = prev.map((tx) => {
+            if (tx.parentInstallmentId === pId) {
+              const updatedTx: Transaction = {
+                ...tx,
+                ...(restUpdates.category ? { category: restUpdates.category } : {}),
+                ...(restUpdates.categoryGroup ? { categoryGroup: restUpdates.categoryGroup } : {}),
+                ...(restUpdates.cardStatementName !== undefined ? { cardStatementName: restUpdates.cardStatementName } : {}),
+                ...(restUpdates.creditCardId ? { creditCardId: restUpdates.creditCardId } : {}),
+                ...(restUpdates.notes !== undefined ? { notes: restUpdates.notes } : {}),
+                ...(baseDesc ? { description: `${baseDesc} (${tx.installmentNumber || 1}/${tx.installmentsTotal || 1}x)` } : {}),
+              }
+              if (tx.id === id) {
+                if (restUpdates.amount !== undefined) updatedTx.amount = restUpdates.amount
+                if (restUpdates.dueDate !== undefined) updatedTx.dueDate = restUpdates.dueDate
+                if (restUpdates.status !== undefined) updatedTx.status = restUpdates.status
+              }
+              updatedBatch.push(updatedTx)
+              return updatedTx
+            }
+            return tx
+          })
+
+          saveTransactionsBatchToSupabase(updatedBatch)
+          return newTxs
+        }
+
+        // Atualização de parcela ou transação única
+        return prev.map((tx) => {
           if (tx.id !== id) return tx
-          const merged = { ...tx, ...updates }
+          const merged = { ...tx, ...restUpdates }
 
-          // Se a data de vencimento foi informada explicitamente, respeita a escolha do usuário
-          if (updates.dueDate) {
-            merged.dueDate = updates.dueDate
-          } else if (merged.paymentMethod === 'credit_card' && merged.creditCardId && updates.date) {
+          if (restUpdates.dueDate) {
+            merged.dueDate = restUpdates.dueDate
+          } else if (merged.paymentMethod === 'credit_card' && merged.creditCardId && restUpdates.date) {
             const card = cards.find((c) => c.id === merged.creditCardId)
             if (card) {
-              const { dueDate } = calculateInvoiceDueDate(updates.date, card.closingDay, card.dueDay)
+              const { dueDate } = calculateInvoiceDueDate(restUpdates.date, card.closingDay, card.dueDay)
               merged.dueDate = dueDate
               finalUpdates.dueDate = dueDate
             }
           }
           return merged
         })
-      )
-      updateTransactionInSupabase(id, finalUpdates)
+      })
+
+      if (!updateSeries) {
+        updateTransactionInSupabase(id, finalUpdates)
+      }
     },
     [cards]
   )
 
-  const deleteTransaction = useCallback((id: string) => {
-    setTransactions((prev) => prev.filter((tx) => tx.id !== id))
-    // Exclui do banco SOMENTE quando o usuário aciona
-    deleteTransactionFromSupabase(id)
+  const deleteTransaction = useCallback((id: string, deleteSeries = false) => {
+    setTransactions((prev) => {
+      const target = prev.find((tx) => tx.id === id)
+      if (deleteSeries && target?.parentInstallmentId) {
+        const pId = target.parentInstallmentId
+        deleteInstallmentSeriesFromSupabase(pId)
+        return prev.filter((tx) => tx.parentInstallmentId !== pId)
+      } else {
+        deleteTransactionFromSupabase(id)
+        return prev.filter((tx) => tx.id !== id)
+      }
+    })
+  }, [])
+
+  const deleteInstallmentSeries = useCallback((parentInstallmentId: string) => {
+    setTransactions((prev) => prev.filter((tx) => tx.parentInstallmentId !== parentInstallmentId))
+    deleteInstallmentSeriesFromSupabase(parentInstallmentId)
   }, [])
 
   const toggleTransactionStatus = useCallback((id: string) => {
@@ -627,6 +683,7 @@ export function useFinanceStore() {
     addTransaction,
     updateTransaction,
     deleteTransaction,
+    deleteInstallmentSeries,
     toggleTransactionStatus,
     payCardInvoice,
     resetToMockData,

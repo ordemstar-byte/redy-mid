@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import type { DetailedCard } from '../hooks/useCreditCards'
-import type { CardsMetricsSummary, Transaction, CreditCard } from '../types'
+import type { CardsMetricsSummary, Transaction, CreditCard, ActiveInstallment } from '../types'
 import { CreditCardVisual } from './CreditCardVisual'
 import { formatCurrency, formatDateBR, formatMonthYearHeader } from '../lib/utils'
 import {
@@ -15,24 +15,13 @@ import {
   Edit3,
   ChevronLeft,
   ChevronRight,
+  AlertTriangle,
 } from 'lucide-react'
 
 interface CreditCardsViewProps {
   detailedCards: DetailedCard[]
   summary: CardsMetricsSummary
-  activeInstallmentsList: Array<{
-    cardName: string
-    cardId: string
-    description: string
-    cardStatementName?: string
-    totalInstallments: number
-    paidInstallments: number
-    remainingInstallments: number
-    installmentAmount: number
-    remainingAmount: number
-    nextDueDate: string
-    category: string
-  }>
+  activeInstallmentsList: ActiveInstallment[]
   privacyMode: boolean
   onOpenNewCard: () => void
   onOpenNewTransaction: () => void
@@ -40,7 +29,8 @@ interface CreditCardsViewProps {
   onManageCard?: (card: CreditCard) => void
   onPayInvoice: (cardId: string, invoiceTransactions: Transaction[]) => void
   onDeleteCard: (cardId: string) => void
-  onDeleteTransaction: (id: string) => void
+  onDeleteTransaction: (id: string, deleteSeries?: boolean) => void
+  onDeleteInstallmentSeries?: (parentInstallmentId: string) => void
   onManageTransaction?: (tx: Transaction) => void
   onEditTransaction?: (tx: Transaction) => void
 }
@@ -57,12 +47,14 @@ export function CreditCardsView({
   onPayInvoice,
   onDeleteCard,
   onDeleteTransaction,
+  onDeleteInstallmentSeries,
   onManageTransaction,
   onEditTransaction,
 }: CreditCardsViewProps) {
   const [selectedCardId, setSelectedCardId] = useState<string>(() => {
     return detailedCards[0]?.id || ''
   })
+  const [confirmDeleteSeriesId, setConfirmDeleteSeriesId] = useState<string | null>(null)
 
   const cardsCarouselRef = useRef<HTMLDivElement>(null)
 
@@ -82,7 +74,7 @@ export function CreditCardsView({
     const tracker = clickTrackers.current.get(tx.id) || { count: 0, time: 0 }
     const diff = now - tracker.time
 
-    if (diff < 500) {
+    if (diff < 800) {
       tracker.count += 1
     } else {
       tracker.count = 1
@@ -97,6 +89,32 @@ export function CreditCardsView({
         onManageTransaction(tx)
       } else if (onEditTransaction) {
         onEditTransaction(tx)
+      }
+    }
+  }
+
+  const handleInstallmentCardClick = (e: React.MouseEvent, inst: ActiveInstallment) => {
+    if ((e.target as HTMLElement).closest('button')) return
+
+    const now = Date.now()
+    const tracker = clickTrackers.current.get(inst.parentInstallmentId) || { count: 0, time: 0 }
+    const diff = now - tracker.time
+
+    if (diff < 800) {
+      tracker.count += 1
+    } else {
+      tracker.count = 1
+    }
+    tracker.time = now
+    clickTrackers.current.set(inst.parentInstallmentId, tracker)
+
+    if (tracker.count >= 3 || e.detail >= 3) {
+      tracker.count = 0
+      clickTrackers.current.set(inst.parentInstallmentId, tracker)
+      if (onManageTransaction && inst.sampleTransaction) {
+        onManageTransaction(inst.sampleTransaction)
+      } else if (onEditTransaction && inst.sampleTransaction) {
+        onEditTransaction(inst.sampleTransaction)
       }
     }
   }
@@ -497,19 +515,32 @@ export function CreditCardsView({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
                         <button
                           type="button"
-                          onClick={() => onManageTransaction ? onManageTransaction(tx) : onEditTransaction?.(tx)}
-                          className="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-500 active:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
-                          title="Gerenciar / Editar lançamento (ou 3 cliques)"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (onManageTransaction) onManageTransaction(tx)
+                            else if (onEditTransaction) onEditTransaction(tx)
+                          }}
+                          className="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-500 active:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors cursor-pointer"
+                          title="Gerenciar / Editar lançamento (ou 3 cliques na linha)"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           type="button"
-                          onClick={() => onDeleteTransaction(tx.id)}
-                          className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 active:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (tx.parentInstallmentId && (tx.installmentsTotal || 1) > 1) {
+                              // Se for parcelado, abre o modal de gerenciamento para o usuário escolher entre excluir a parcela ou a série
+                              if (onManageTransaction) onManageTransaction(tx)
+                              else onDeleteTransaction(tx.id)
+                            } else {
+                              onDeleteTransaction(tx.id)
+                            }
+                          }}
+                          className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 active:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
                           title="Remover lançamento"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -553,13 +584,15 @@ export function CreditCardsView({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {activeInstallmentsList.map((inst, idx) => (
               <div
-                key={idx}
-                className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800/90 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all space-y-3 shadow-sm"
+                key={inst.parentInstallmentId || idx}
+                onClick={(e) => handleInstallmentCardClick(e, inst)}
+                title="Clique 3 vezes para gerenciar este parcelamento"
+                className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800/90 hover:border-purple-300 dark:hover:border-purple-700/60 transition-all space-y-3 shadow-sm cursor-pointer group select-none relative"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-200">{inst.description}</h4>
+                      <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-200 truncate">{inst.description}</h4>
                       {inst.cardStatementName && (
                         <span className="text-[10px] font-mono font-medium px-2 py-0.2 rounded bg-purple-100/70 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
                           {inst.cardStatementName}
@@ -570,10 +603,76 @@ export function CreditCardsView({
                       {inst.cardName} • {inst.category}
                     </span>
                   </div>
-                  <span className="font-mono-numbers text-xs font-bold text-zinc-900 dark:text-white bg-white dark:bg-zinc-800 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-700/60 shadow-xs">
-                    {formatCurrency(inst.installmentAmount, privacyMode)}/mês
-                  </span>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="font-mono-numbers text-xs font-bold text-zinc-900 dark:text-white bg-white dark:bg-zinc-800 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-700/60 shadow-xs">
+                      {formatCurrency(inst.installmentAmount, privacyMode)}/mês
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (onManageTransaction && inst.sampleTransaction) {
+                          onManageTransaction(inst.sampleTransaction)
+                        } else if (onEditTransaction && inst.sampleTransaction) {
+                          onEditTransaction(inst.sampleTransaction)
+                        }
+                      }}
+                      className="p-1 rounded-lg text-zinc-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors cursor-pointer"
+                      title="Gerenciar / Editar este parcelamento"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setConfirmDeleteSeriesId(inst.parentInstallmentId)
+                      }}
+                      className="p-1 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
+                      title="Excluir parcelamento completo"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
+
+                {/* Confirmação de exclusão da série */}
+                {confirmDeleteSeriesId === inst.parentInstallmentId && (
+                  <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-800/60 text-xs text-rose-800 dark:text-rose-300 space-y-2 animate-fade-in">
+                    <div className="flex items-center gap-1.5 font-bold text-rose-950 dark:text-rose-200">
+                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <span>Excluir todas as {inst.totalInstallments} parcelas deste parcelamento?</span>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (onDeleteInstallmentSeries) {
+                            onDeleteInstallmentSeries(inst.parentInstallmentId)
+                          } else if (inst.sampleTransaction) {
+                            onDeleteTransaction(inst.sampleTransaction.id, true)
+                          }
+                          setConfirmDeleteSeriesId(null)
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs cursor-pointer"
+                      >
+                        Confirmar Exclusão Total
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setConfirmDeleteSeriesId(null)
+                        }}
+                        className="px-2.5 py-1.5 text-xs text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 cursor-pointer"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Progress of installments */}
                 <div>
@@ -597,7 +696,10 @@ export function CreditCardsView({
 
                 <div className="flex items-center justify-between text-[10px] text-zinc-400 pt-1 border-t border-zinc-200/80 dark:border-zinc-800/60">
                   <span>Próximo vencimento: {formatDateBR(inst.nextDueDate)}</span>
-                  <span>{inst.remainingInstallments} parcelas pendentes</span>
+                  <span className="flex items-center gap-1">
+                    <span className="hidden sm:inline text-purple-600 dark:text-purple-400 font-medium">3 toques para gerenciar •</span>
+                    <span>{inst.remainingInstallments} parcelas pendentes</span>
+                  </span>
                 </div>
               </div>
             ))}

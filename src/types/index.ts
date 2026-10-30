@@ -116,6 +116,23 @@ export interface CardsMetricsSummary {
   totalActiveInstallmentsCount: number
 }
 
+export interface ActiveInstallment {
+  parentInstallmentId: string
+  sampleTransaction: Transaction
+  allTransactions: Transaction[]
+  cardName: string
+  cardId: string
+  description: string
+  cardStatementName?: string
+  totalInstallments: number
+  paidInstallments: number
+  remainingInstallments: number
+  installmentAmount: number
+  remainingAmount: number
+  nextDueDate: string
+  category: string
+}
+
 export interface DetailedBankAccount extends BankAccount {
   currentBalance: number
   incomesTotal: number

@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import type { CreditCard, Transaction, CardsMetricsSummary, CardInvoice } from '../types'
+import type { CreditCard, Transaction, CardsMetricsSummary, CardInvoice, ActiveInstallment } from '../types'
 import { getBestPurchaseDay, getDaysUntilClosing, getInvoiceCycleDates } from '../lib/utils'
 
 interface UseCreditCardsProps {
@@ -171,50 +171,48 @@ export function useCreditCards({ cards, transactions }: UseCreditCardsProps) {
   }, [detailedCards])
 
   // Lista consolidada de parcelamentos em andamento em todos os cartões
-  const activeInstallmentsList = useMemo(() => {
-    const parentMap = new Map<string, {
-      cardName: string
-      cardId: string
-      description: string
-      cardStatementName?: string
-      totalInstallments: number
-      paidInstallments: number
-      remainingInstallments: number
-      installmentAmount: number
-      remainingAmount: number
-      nextDueDate: string
-      category: string
-    }>()
+  const activeInstallmentsList: ActiveInstallment[] = useMemo(() => {
+    const parentMap = new Map<string, ActiveInstallment>()
 
     cardTransactions.forEach((tx) => {
       if ((tx.installmentsTotal || 1) > 1 && tx.parentInstallmentId) {
         const key = tx.parentInstallmentId
         const card = cards.find((c) => c.id === tx.creditCardId)
-        const current = parentMap.get(key) || {
-          cardName: card?.name || 'Cartão',
-          cardId: tx.creditCardId || '',
-          description: tx.description.replace(/\s\(\d+\/\d+x\)/, ''),
-          cardStatementName: tx.cardStatementName,
-          totalInstallments: tx.installmentsTotal || 1,
-          paidInstallments: 0,
-          remainingInstallments: 0,
-          installmentAmount: tx.amount,
-          remainingAmount: 0,
-          nextDueDate: tx.dueDate,
-          category: tx.category,
+        let current = parentMap.get(key)
+        
+        if (!current) {
+          current = {
+            parentInstallmentId: key,
+            sampleTransaction: tx,
+            allTransactions: [],
+            cardName: card?.name || 'Cartão',
+            cardId: tx.creditCardId || '',
+            description: tx.description.replace(/\s\(\d+\/\d+x\)/, ''),
+            cardStatementName: tx.cardStatementName,
+            totalInstallments: tx.installmentsTotal || 1,
+            paidInstallments: 0,
+            remainingInstallments: 0,
+            installmentAmount: tx.amount,
+            remainingAmount: 0,
+            nextDueDate: tx.dueDate,
+            category: tx.category,
+          }
+          parentMap.set(key, current)
         }
+
+        current.allTransactions.push(tx)
 
         if (tx.status === 'paid') {
           current.paidInstallments += 1
         } else {
           current.remainingInstallments += 1
           current.remainingAmount += tx.amount
+          // Se for a parcela pendente mais próxima, vira o sampleTransaction e nextDueDate
           if (!current.nextDueDate || tx.dueDate < current.nextDueDate) {
             current.nextDueDate = tx.dueDate
+            current.sampleTransaction = tx
           }
         }
-
-        parentMap.set(key, current)
       }
     })
 

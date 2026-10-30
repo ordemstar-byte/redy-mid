@@ -42,6 +42,7 @@ export function App() {
     addTransaction,
     updateTransaction,
     deleteTransaction,
+    deleteInstallmentSeries,
     toggleTransactionStatus,
     payCardInvoice,
     resetToMockData,
@@ -169,7 +170,10 @@ export function App() {
             cards={cards}
             privacyMode={privacyMode}
             onToggleStatus={toggleTransactionStatus}
-            onDeleteTransaction={deleteTransaction}
+            onDeleteTransaction={(id, deleteSeries) => {
+              deleteTransaction(id, deleteSeries)
+              showToast(deleteSeries ? 'Todas as parcelas do parcelamento foram excluídas.' : 'Lançamento excluído com sucesso.')
+            }}
             onOpenNewTransaction={() => {
               setEditingTransaction(null)
               setIsTransactionModalOpen(true)
@@ -178,6 +182,11 @@ export function App() {
             onEditTransaction={(tx) => {
               setEditingTransaction(tx)
               setIsTransactionModalOpen(true)
+            }}
+            totalTransactionsCount={transactions.length}
+            onResetPeriodToAll={() => {
+              setPeriod('all')
+              showToast('Exibindo todos os lançamentos históricos e futuros.')
             }}
           />
         )}
@@ -207,7 +216,10 @@ export function App() {
               deleteAccount(accId)
               showToast('Conta bancária removida.')
             }}
-            onDeleteTransaction={deleteTransaction}
+            onDeleteTransaction={(id, deleteSeries) => {
+              deleteTransaction(id, deleteSeries)
+              showToast(deleteSeries ? 'Todas as parcelas do parcelamento foram excluídas.' : 'Lançamento excluído com sucesso.')
+            }}
             onToggleStatus={toggleTransactionStatus}
             onManageTransaction={(tx) => setManagingTransaction(tx)}
             onEditTransaction={(tx) => {
@@ -246,7 +258,14 @@ export function App() {
               deleteCard(cardId)
               showToast('Cartão removido.')
             }}
-            onDeleteTransaction={deleteTransaction}
+            onDeleteTransaction={(id, deleteSeries) => {
+              deleteTransaction(id, deleteSeries)
+              showToast(deleteSeries ? 'Todas as parcelas do parcelamento foram excluídas.' : 'Lançamento excluído com sucesso.')
+            }}
+            onDeleteInstallmentSeries={(parentInstallmentId) => {
+              deleteInstallmentSeries(parentInstallmentId)
+              showToast('Todas as parcelas do parcelamento foram excluídas com sucesso.')
+            }}
             onManageTransaction={(tx) => setManagingTransaction(tx)}
             onEditTransaction={(tx) => {
               setEditingTransaction(tx)
@@ -298,11 +317,11 @@ export function App() {
         }}
         onUpdate={(id, updates) => {
           updateTransaction(id, updates)
-          showToast('Lançamento atualizado com sucesso!')
+          showToast(updates.updateSeries ? 'Parcelamento atualizado em todas as parcelas!' : 'Lançamento atualizado com sucesso!')
         }}
-        onDelete={(id) => {
-          deleteTransaction(id)
-          showToast('Lançamento excluído com sucesso.')
+        onDelete={(id, deleteSeries) => {
+          deleteTransaction(id, deleteSeries)
+          showToast(deleteSeries ? 'Todas as parcelas do parcelamento foram excluídas.' : 'Lançamento excluído com sucesso.')
         }}
       />
 
@@ -317,9 +336,9 @@ export function App() {
           setEditingTransaction(tx)
           setIsTransactionModalOpen(true)
         }}
-        onDelete={(id) => {
-          deleteTransaction(id)
-          showToast('Lançamento excluído com sucesso.')
+        onDelete={(id, deleteSeries) => {
+          deleteTransaction(id, deleteSeries)
+          showToast(deleteSeries ? 'Todas as parcelas do parcelamento foram excluídas.' : 'Lançamento excluído com sucesso.')
         }}
         onToggleStatus={(id) => {
           toggleTransactionStatus(id)
