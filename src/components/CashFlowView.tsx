@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react'
-import type { Transaction, CashFlowSummary, CashFlowDay, CreditCard } from '../types'
+import type { Transaction, CashFlowSummary, CashFlowDay, CreditCard, PeriodFilter } from '../types'
 import { formatCurrency, formatDateBR, calculateInstallmentEndDate } from '../lib/utils'
 import { CashFlowChart } from './CashFlowChart'
 import {
@@ -19,9 +19,12 @@ import {
 interface CashFlowViewProps {
   summary: CashFlowSummary
   transactions: Transaction[]
+  allTransactions?: Transaction[]
   timeline: CashFlowDay[]
   cards: CreditCard[]
   privacyMode: boolean
+  period?: PeriodFilter
+  setPeriod?: (period: PeriodFilter) => void
   onToggleStatus: (id: string) => void
   onDeleteTransaction: (id: string, deleteSeries?: boolean) => void
   onOpenNewTransaction: () => void
@@ -34,9 +37,12 @@ interface CashFlowViewProps {
 export function CashFlowView({
   summary,
   transactions,
+  allTransactions,
   timeline,
   cards,
   privacyMode,
+  period,
+  setPeriod,
   onToggleStatus,
   onDeleteTransaction,
   onOpenNewTransaction,
@@ -49,27 +55,28 @@ export function CashFlowView({
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense' | 'card'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending'>('all')
 
-  const clickTrackers = useRef<Map<string, { count: number; time: number }>>(new Map())
+  const periodLabels: Record<PeriodFilter, string> = {
+    this_month: 'Mês Atual',
+    next_month: 'Próximo Mês',
+    last_month: 'Mês Anterior',
+    next_30_days: 'Próximos 30 dias',
+    next_90_days: 'Próximos 90 dias',
+    this_year: 'Ano de 2026',
+    all: 'Todo o Histórico',
+  }
+
+  const clickTimestamps = useRef<Map<string, number[]>>(new Map())
 
   const handleTxRowClick = (e: React.MouseEvent, tx: Transaction) => {
-    // Se o clique veio de um botão interativo interno, ignora o 3-cliques de linha
     if ((e.target as HTMLElement).closest('button')) return
 
     const now = Date.now()
-    const tracker = clickTrackers.current.get(tx.id) || { count: 0, time: 0 }
-    const diff = now - tracker.time
+    const list = (clickTimestamps.current.get(tx.id) || []).filter((t) => now - t < 1500)
+    list.push(now)
+    clickTimestamps.current.set(tx.id, list)
 
-    if (diff < 800) {
-      tracker.count += 1
-    } else {
-      tracker.count = 1
-    }
-    tracker.time = now
-    clickTrackers.current.set(tx.id, tracker)
-
-    if (tracker.count >= 3 || e.detail >= 3) {
-      tracker.count = 0
-      clickTrackers.current.set(tx.id, tracker)
+    if (list.length >= 3 || e.detail >= 3) {
+      clickTimestamps.current.set(tx.id, [])
       if (onManageTransaction) {
         onManageTransaction(tx)
       } else if (onEditTransaction) {
@@ -132,14 +139,22 @@ export function CashFlowView({
                 <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               </div>
             </div>
-            <div className="text-lg sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-white font-mono-numbers truncate">
+            <div className={`text-lg sm:text-2xl font-bold tracking-tight font-mono-numbers truncate ${
+              summary.realizedBalance >= 0 ? 'text-zinc-900 dark:text-white' : 'text-rose-600 dark:text-rose-400'
+            }`}>
               {formatCurrency(summary.realizedBalance, privacyMode)}
             </div>
           </div>
-          <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
-            <span className="truncate">Confirmado</span>
-          </div>
+          {summary.pastPaidInstallmentsCount && summary.pastPaidInstallmentsCount > 0 ? (
+            <div className="mt-2 text-[10px] text-purple-600 dark:text-purple-400 font-medium truncate" title={`Inclui ${summary.pastPaidInstallmentsCount} parcelas pagas anteriores somando ${formatCurrency(summary.pastPaidInstallmentsTotal || 0, privacyMode)}`}>
+              <span>Inclui {summary.pastPaidInstallmentsCount} parcelas pagas ({formatCurrency(summary.pastPaidInstallmentsTotal || 0, privacyMode)})</span>
+            </div>
+          ) : (
+            <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+              <span className="truncate">Confirmado</span>
+            </div>
+          )}
         </div>
 
         {/* Card 2: Entradas no Período */}
@@ -164,7 +179,7 @@ export function CashFlowView({
         <div className="rounded-2xl p-3.5 sm:p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/90 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:border-zinc-300 dark:hover:border-zinc-700/80 transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-xs mb-1.5 sm:mb-2">
-              <span className="font-medium truncate">Saídas / Gastos</span>
+              <span className="font-medium truncate">Saídas do Período</span>
               <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
                 <ArrowDownRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
@@ -175,6 +190,7 @@ export function CashFlowView({
           </div>
           <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 flex justify-between gap-1 truncate">
             <span>Pago: <strong className="text-zinc-800 dark:text-zinc-200">{formatCurrency(summary.periodExpensesRealized, privacyMode)}</strong></span>
+            <span>Pendente: <strong className="text-zinc-800 dark:text-zinc-200">{formatCurrency(summary.periodExpensesPending, privacyMode)}</strong></span>
           </div>
         </div>
 
@@ -289,9 +305,55 @@ export function CashFlowView({
                 Previstos
               </button>
             </div>
+
+            {/* Seletor de Período Integrado no Fluxo de Caixa */}
+            {setPeriod && period && (
+              <select
+                value={period}
+                onChange={(e) => setPeriod(e.target.value as PeriodFilter)}
+                className="bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 text-xs px-2.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer shadow-xs font-semibold"
+              >
+                <option value="this_month">Mês Atual</option>
+                <option value="next_month">Próximo Mês</option>
+                <option value="last_month">Mês Anterior</option>
+                <option value="next_30_days">Próximos 30 dias</option>
+                <option value="next_90_days">Próximos 90 dias</option>
+                <option value="this_year">Ano de 2026</option>
+                <option value="all">Todo o Histórico</option>
+              </select>
+            )}
           </div>
 
         </div>
+
+        {/* Banner Informativo quando o período não for 'all' e houver lançamentos em outros meses */}
+        {period !== 'all' && (allTransactions?.length || totalTransactionsCount || 0) > filteredTransactions.length && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 rounded-xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 text-xs text-purple-900 dark:text-purple-200">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
+              <span>
+                Exibindo lançamentos de <strong>{period ? periodLabels[period] : 'Mês Atual'}</strong> ({filteredTransactions.length} exibidos). 
+                {summary.pastPaidInstallmentsCount && summary.pastPaidInstallmentsCount > 0 ? (
+                  <> Existem <strong>{allTransactions?.length || totalTransactionsCount} lançamentos</strong> no histórico (incluindo as {summary.pastPaidInstallmentsCount} parcelas de Jan a Set que totalizam {formatCurrency(summary.pastPaidInstallmentsTotal || 0, privacyMode)}).</>
+                ) : (
+                  <> Você possui <strong>{allTransactions?.length || totalTransactionsCount} lançamentos</strong> em outros meses/períodos.</>
+                )}
+              </span>
+            </div>
+            {(setPeriod || onResetPeriodToAll) && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (setPeriod) setPeriod('all')
+                  else if (onResetPeriodToAll) onResetPeriodToAll()
+                }}
+                className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs transition-colors shrink-0 cursor-pointer shadow-xs whitespace-nowrap self-start sm:self-auto"
+              >
+                Ver Todo o Histórico ({allTransactions?.length || totalTransactionsCount})
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Tabela de Lançamentos (Desktop / Tablet) */}
         <div className="hidden md:block overflow-x-auto">
@@ -310,22 +372,32 @@ export function CashFlowView({
               {filteredTransactions.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-zinc-400 dark:text-zinc-500">
-                    <p className="font-medium text-xs sm:text-sm">Nenhum lançamento encontrado para o período selecionado.</p>
-                    {Boolean(totalTransactionsCount && totalTransactionsCount > 0 && onResetPeriodToAll) && (
-                      <div className="mt-2 text-xs">
-                        <span className="text-zinc-500">Você possui <strong>{totalTransactionsCount}</strong> lançamentos em outros meses/períodos. </span>
-                        <button
-                          type="button"
-                          onClick={onResetPeriodToAll}
-                          className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer ml-1"
-                        >
-                          Ver Todos os Lançamentos
-                        </button>
+                    <p className="font-semibold text-sm text-zinc-700 dark:text-zinc-300">
+                      Nenhum lançamento com efetivação no período selecionado ({period ? periodLabels[period] : 'Mês Atual'}).
+                    </p>
+                    {(allTransactions?.length || totalTransactionsCount || 0) > 0 && (
+                      <div className="mt-3 max-w-md mx-auto text-xs text-zinc-500 dark:text-zinc-400 space-y-2">
+                        <p>
+                          Você possui <strong>{allTransactions?.length || totalTransactionsCount} lançamentos</strong> no histórico (como as parcelas de compras iniciadas em meses anteriores).
+                        </p>
+                        {(setPeriod || onResetPeriodToAll) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (setPeriod) setPeriod('all')
+                              else if (onResetPeriodToAll) onResetPeriodToAll()
+                            }}
+                            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer inline-flex items-center gap-1.5"
+                          >
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>Exibir Todo o Histórico ({allTransactions?.length || totalTransactionsCount} lançamentos)</span>
+                          </button>
+                        )}
                       </div>
                     )}
                     <button
                       onClick={onOpenNewTransaction}
-                      className="mt-3 text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline block mx-auto cursor-pointer"
+                      className="mt-4 text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline block mx-auto cursor-pointer"
                     >
                       + Cadastrar novo lançamento agora
                     </button>
@@ -471,22 +543,32 @@ export function CashFlowView({
         <div className="md:hidden divide-y divide-zinc-100 dark:divide-zinc-800/60">
           {filteredTransactions.length === 0 ? (
             <div className="py-12 text-center text-zinc-400 dark:text-zinc-500 px-4">
-              <p className="font-medium text-xs sm:text-sm">Nenhum lançamento encontrado para o período selecionado.</p>
-              {Boolean(totalTransactionsCount && totalTransactionsCount > 0 && onResetPeriodToAll) && (
-                <div className="mt-2 text-xs">
-                  <span className="text-zinc-500">Você possui <strong>{totalTransactionsCount}</strong> lançamentos em outros meses. </span>
-                  <button
-                    type="button"
-                    onClick={onResetPeriodToAll}
-                    className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer block mx-auto mt-1"
-                  >
-                    Ver Todos os Lançamentos
-                  </button>
+              <p className="font-semibold text-sm text-zinc-700 dark:text-zinc-300">
+                Nenhum lançamento com efetivação no período selecionado ({period ? periodLabels[period] : 'Mês Atual'}).
+              </p>
+              {(allTransactions?.length || totalTransactionsCount || 0) > 0 && (
+                <div className="mt-3 max-w-xs mx-auto text-xs text-zinc-500 dark:text-zinc-400 space-y-2">
+                  <p>
+                    Você possui <strong>{allTransactions?.length || totalTransactionsCount} lançamentos</strong> em outros meses.
+                  </p>
+                  {(setPeriod || onResetPeriodToAll) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (setPeriod) setPeriod('all')
+                        else if (onResetPeriodToAll) onResetPeriodToAll()
+                      }}
+                      className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer inline-flex items-center gap-1.5"
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>Ver Todo o Histórico ({allTransactions?.length || totalTransactionsCount})</span>
+                    </button>
+                  )}
                 </div>
               )}
               <button
                 onClick={onOpenNewTransaction}
-                className="mt-3 text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline block mx-auto py-1 cursor-pointer"
+                className="mt-4 text-xs text-emerald-600 dark:text-emerald-400 font-semibold hover:underline block mx-auto py-1 cursor-pointer"
               >
                 + Cadastrar lançamento agora
               </button>

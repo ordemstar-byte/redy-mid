@@ -54,7 +54,7 @@ export function App() {
     summary: cashFlowSummary,
     periodTransactions,
     dailyTimeline,
-  } = useCashFlow({ transactions, period })
+  } = useCashFlow({ transactions, period, accounts })
 
   const {
     detailedCards,
@@ -166,9 +166,12 @@ export function App() {
           <CashFlowView
             summary={cashFlowSummary}
             transactions={periodTransactions}
+            allTransactions={transactions}
             timeline={dailyTimeline}
             cards={cards}
             privacyMode={privacyMode}
+            period={period}
+            setPeriod={setPeriod}
             onToggleStatus={toggleTransactionStatus}
             onDeleteTransaction={(id, deleteSeries) => {
               deleteTransaction(id, deleteSeries)

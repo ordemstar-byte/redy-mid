@@ -104,6 +104,9 @@ export interface CashFlowSummary {
   totalExpenses: number
   netPeriodResult: number
   savingsRatePercentage: number
+  pastPaidInstallmentsTotal?: number
+  pastPaidInstallmentsCount?: number
+  accountsInitialBalance?: number
 }
 
 export interface CardsMetricsSummary {

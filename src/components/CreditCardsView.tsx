@@ -56,6 +56,14 @@ export function CreditCardsView({
   })
   const [confirmDeleteSeriesId, setConfirmDeleteSeriesId] = useState<string | null>(null)
 
+  const currentMonthName = new Date().toLocaleDateString('pt-BR', { month: 'long' })
+  const currentMonthCapitalized = currentMonthName.charAt(0).toUpperCase() + currentMonthName.slice(1)
+
+  const nextMonthObj = new Date()
+  nextMonthObj.setMonth(nextMonthObj.getMonth() + 1)
+  const nextMonthName = nextMonthObj.toLocaleDateString('pt-BR', { month: 'long' })
+  const nextMonthCapitalized = nextMonthName.charAt(0).toUpperCase() + nextMonthName.slice(1)
+
   const cardsCarouselRef = useRef<HTMLDivElement>(null)
 
   const scrollCarousel = (direction: 'left' | 'right') => {
@@ -184,13 +192,15 @@ export function CreditCardsView({
         {/* Current Invoices Total */}
         <div className="rounded-2xl p-3.5 sm:p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/90 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm flex flex-col justify-between">
           <div>
-            <div className="text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-xs font-medium mb-1 truncate">Faturas Deste Mês</div>
+            <div className="text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-xs font-medium mb-1 truncate">
+              Faturas de {currentMonthCapitalized}
+            </div>
             <div className="text-lg sm:text-2xl font-bold font-mono-numbers text-zinc-900 dark:text-zinc-200 truncate">
               {formatCurrency(summary.currentMonthInvoicesTotal, privacyMode)}
             </div>
           </div>
           <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center justify-between">
-            <span>Próximo:</span>
+            <span>Próximo ({nextMonthCapitalized}):</span>
             <span className="font-mono-numbers text-zinc-700 dark:text-zinc-300 font-medium truncate">
               {formatCurrency(summary.nextMonthInvoicesTotal, privacyMode)}
             </span>
@@ -429,7 +439,7 @@ export function CreditCardsView({
           {/* Invoice Transactions List */}
           <div className="space-y-2">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Lançamentos Desta Fatura ({activeInvoice?.transactions.length || 0})
+              Lançamentos da Fatura de {currentMonthCapitalized} ({activeInvoice?.transactions.length || 0})
             </h4>
 
             {activeInvoice && activeInvoice.transactions.length > 0 ? (

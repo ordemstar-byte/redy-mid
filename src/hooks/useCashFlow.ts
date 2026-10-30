@@ -1,12 +1,13 @@
 import { useMemo } from 'react'
-import type { Transaction, PeriodFilter, CashFlowSummary, CashFlowDay, CategoryGroup } from '../types'
+import type { Transaction, PeriodFilter, CashFlowSummary, CashFlowDay, CategoryGroup, BankAccount } from '../types'
 
 interface UseCashFlowProps {
   transactions: Transaction[]
   period: PeriodFilter
+  accounts?: BankAccount[]
 }
 
-export function useCashFlow({ transactions, period }: UseCashFlowProps) {
+export function useCashFlow({ transactions, period, accounts }: UseCashFlowProps) {
   // Define o intervalo de datas do período selecionado
   const dateRange = useMemo(() => {
     const now = new Date()
@@ -50,13 +51,18 @@ export function useCashFlow({ transactions, period }: UseCashFlowProps) {
     }).sort((a, b) => (a.dueDate || a.date).localeCompare(b.dueDate || b.date))
   }, [transactions, dateRange])
 
+  // Saldo inicial de todas as contas bancárias cadastradas
+  const accountsInitialBalance = useMemo(() => {
+    return (accounts || []).reduce((sum, a) => sum + (a.initialBalance || 0), 0)
+  }, [accounts])
+
   // Saldo Realizado Histórico Total (Dinheiro líquido em conta hoje)
   const realizedBalance = useMemo(() => {
     return transactions.reduce((acc, tx) => {
       if (tx.status !== 'paid') return acc
       return tx.type === 'income' ? acc + tx.amount : acc - tx.amount
-    }, 0)
-  }, [transactions])
+    }, accountsInitialBalance)
+  }, [transactions, accountsInitialBalance])
 
   // Sumário Financeiro do Período
   const summary: CashFlowSummary = useMemo(() => {
@@ -91,6 +97,13 @@ export function useCashFlow({ transactions, period }: UseCashFlowProps) {
     const savingsRatePercentage =
       totalIncomes > 0 ? Math.max(0, (netPeriodResult / totalIncomes) * 100) : 0
 
+    // Contabiliza parcelas anteriores de compras parceladas que já foram pagas
+    const pastPaidInstallments = transactions.filter(
+      (tx) => tx.status === 'paid' && (tx.installmentsTotal || 1) > 1 && tx.paymentMethod === 'credit_card'
+    )
+    const pastPaidInstallmentsTotal = pastPaidInstallments.reduce((sum, tx) => sum + tx.amount, 0)
+    const pastPaidInstallmentsCount = pastPaidInstallments.length
+
     return {
       realizedBalance,
       projectedMonthEndBalance,
@@ -102,8 +115,11 @@ export function useCashFlow({ transactions, period }: UseCashFlowProps) {
       totalExpenses,
       netPeriodResult,
       savingsRatePercentage,
+      pastPaidInstallmentsTotal,
+      pastPaidInstallmentsCount,
+      accountsInitialBalance,
     }
-  }, [periodTransactions, realizedBalance])
+  }, [periodTransactions, realizedBalance, transactions, accountsInitialBalance])
 
   // Linha do tempo diária do fluxo de caixa
   const dailyTimeline: CashFlowDay[] = useMemo(() => {
