@@ -13,6 +13,8 @@ import {
   Sparkles,
   TrendingUp,
   Edit3,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 
 interface BankAccountsViewProps {
@@ -56,6 +58,15 @@ export function BankAccountsView({
   const [selectedAccountId, setSelectedAccountId] = useState<string>(() => {
     return detailedAccounts[0]?.id || ''
   })
+
+  const accountsCarouselRef = useRef<HTMLDivElement>(null)
+
+  const scrollAccountsCarousel = (direction: 'left' | 'right') => {
+    if (accountsCarouselRef.current) {
+      const scrollAmount = direction === 'left' ? -360 : 360
+      accountsCarouselRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' })
+    }
+  }
 
   const clickTrackers = useRef<Map<string, { count: number; time: number }>>(new Map())
 
@@ -194,39 +205,79 @@ export function BankAccountsView({
 
       </div>
 
-      {/* Grid of Bank Accounts Cards */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+      {/* Bank Accounts Horizontal Carousel Box */}
+      <div className="rounded-2xl sm:rounded-3xl bg-white dark:bg-zinc-900/60 border border-zinc-200/90 dark:border-zinc-800/80 p-4 sm:p-6 shadow-sm backdrop-blur-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-xs uppercase tracking-wider font-bold text-zinc-900 dark:text-white">
-              Suas Contas Bancárias
-            </h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Selecione uma conta para auditar extratos, saldos e movimentações
+            <div className="flex items-center gap-2">
+              <h2 className="text-xs uppercase tracking-wider font-bold text-zinc-900 dark:text-white">
+                Suas Contas Bancárias
+              </h2>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-200 dark:border-emerald-800/60">
+                {detailedAccounts.length} {detailedAccounts.length === 1 ? 'conta' : 'contas'}
+              </span>
+            </div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              Passe para o lado para navegar e selecionar a conta desejada
             </p>
           </div>
-          <button
-            onClick={onOpenNewAccount}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-zinc-700 dark:text-zinc-200 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all shadow-sm"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Nova Conta</span>
-          </button>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            {/* Scroll Navigation Buttons */}
+            <div className="flex items-center gap-1.5 mr-1">
+              <button
+                type="button"
+                onClick={() => scrollAccountsCarousel('left')}
+                className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
+                title="Rolar para a esquerda"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollAccountsCarousel('right')}
+                className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
+                title="Rolar para a direita"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            <button
+              onClick={onOpenNewAccount}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-zinc-700 dark:text-zinc-200 bg-white dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-all shadow-sm"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Nova Conta</span>
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {detailedAccounts.map((account) => (
-            <BankAccountVisual
-              key={account.id}
-              account={account}
-              privacyMode={privacyMode}
-              isSelected={activeAccount?.id === account.id}
-              onClick={() => setSelectedAccountId(account.id)}
-              onTripleClick={() => {
-                if (onManageAccount) onManageAccount(account)
-              }}
-            />
-          ))}
+        {/* The Horizontal Carousel Container */}
+        <div
+          ref={accountsCarouselRef}
+          className="flex items-stretch gap-4 sm:gap-6 overflow-x-auto pb-4 pt-1 px-1 scroll-smooth snap-x snap-mandatory scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          {detailedAccounts.map((account) => {
+            const isSelected = activeAccount?.id === account.id
+            return (
+              <div
+                key={account.id}
+                className="shrink-0 snap-center w-[85vw] max-w-[340px] sm:max-w-[370px]"
+              >
+                <BankAccountVisual
+                  account={account}
+                  privacyMode={privacyMode}
+                  isSelected={isSelected}
+                  onClick={() => setSelectedAccountId(account.id)}
+                  onTripleClick={() => {
+                    if (onManageAccount) onManageAccount(account)
+                  }}
+                />
+              </div>
+            )
+          })}
         </div>
       </div>
 

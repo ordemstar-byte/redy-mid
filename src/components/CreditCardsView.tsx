@@ -13,6 +13,8 @@ import {
   Trash2,
   Clock,
   Edit3,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 
 interface CreditCardsViewProps {
@@ -61,6 +63,15 @@ export function CreditCardsView({
   const [selectedCardId, setSelectedCardId] = useState<string>(() => {
     return detailedCards[0]?.id || ''
   })
+
+  const cardsCarouselRef = useRef<HTMLDivElement>(null)
+
+  const scrollCarousel = (direction: 'left' | 'right') => {
+    if (cardsCarouselRef.current) {
+      const scrollAmount = direction === 'left' ? -360 : 360
+      cardsCarouselRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' })
+    }
+  }
 
   const clickTrackers = useRef<Map<string, { count: number; time: number }>>(new Map())
 
@@ -187,61 +198,100 @@ export function CreditCardsView({
 
       </div>
 
-      {/* Cards Carousel / Grid */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
+      {/* Cards Horizontal Carousel Box */}
+      <div className="rounded-2xl sm:rounded-3xl bg-white dark:bg-zinc-900/60 border border-zinc-200/90 dark:border-zinc-800/80 p-4 sm:p-6 shadow-sm backdrop-blur-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-xs uppercase tracking-wider font-bold text-zinc-900 dark:text-white">
-              Seus Cartões de Crédito
-            </h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Selecione um cartão para auditar faturas, lançamentos e parcelamentos
+            <div className="flex items-center gap-2">
+              <h2 className="text-xs uppercase tracking-wider font-bold text-zinc-900 dark:text-white">
+                Seus Cartões de Crédito
+              </h2>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-semibold border border-purple-200 dark:border-purple-800/60">
+                {detailedCards.length} {detailedCards.length === 1 ? 'cartão' : 'cartões'}
+              </span>
+            </div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              Passe para o lado para navegar e selecionar o cartão desejado
             </p>
           </div>
-          <button
-            onClick={onOpenNewCard}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-zinc-700 dark:text-zinc-200 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all shadow-sm"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Adicionar Cartão</span>
-          </button>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            {/* Scroll Navigation Buttons */}
+            <div className="flex items-center gap-1.5 mr-1">
+              <button
+                type="button"
+                onClick={() => scrollCarousel('left')}
+                className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
+                title="Rolar para a esquerda"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollCarousel('right')}
+                className="w-8 h-8 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
+                title="Rolar para a direita"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            <button
+              onClick={onOpenNewCard}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-zinc-700 dark:text-zinc-200 bg-white dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-all shadow-sm"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Adicionar Cartão</span>
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {detailedCards.map((card) => (
-            <div key={card.id} className="flex flex-col items-center">
-              <CreditCardVisual
-                card={card}
-                usedLimit={card.totalCommittedLimit}
-                privacyMode={privacyMode}
-                isSelected={activeCard?.id === card.id}
-                onClick={() => {
-                  setSelectedCardId(card.id)
-                  setSelectedInvoiceMonth('')
-                }}
-                onTripleClick={() => {
-                  if (onManageCard) onManageCard(card)
-                }}
-              />
-              
-              {/* Micro badge under card */}
-              <div className="w-full max-w-[380px] mt-2 px-1 flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400">
-                <span className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3 text-zinc-400 dark:text-zinc-500" />
-                  Melhor dia: <strong className="text-emerald-600 dark:text-emerald-400">{card.bestPurchaseDay}</strong>
-                </span>
-                <span className={`px-2 py-0.5 rounded-md text-[10px] font-medium border ${
-                  card.isClosingSoon
-                    ? 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800/60'
-                    : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800'
-                }`}>
-                  {card.daysUntilClosing === 0
-                    ? 'Fecha hoje!'
-                    : `Fecha em ${card.daysUntilClosing} dias`}
-                </span>
+        {/* The Horizontal Carousel Container */}
+        <div
+          ref={cardsCarouselRef}
+          className="flex items-stretch gap-4 sm:gap-6 overflow-x-auto pb-4 pt-1 px-1 scroll-smooth snap-x snap-mandatory scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          {detailedCards.map((card) => {
+            const isSelected = activeCard?.id === card.id
+            return (
+              <div
+                key={card.id}
+                className="shrink-0 snap-center w-[85vw] max-w-[340px] sm:max-w-[370px] flex flex-col items-center"
+              >
+                <CreditCardVisual
+                  card={card}
+                  usedLimit={card.totalCommittedLimit}
+                  privacyMode={privacyMode}
+                  isSelected={isSelected}
+                  onClick={() => {
+                    setSelectedCardId(card.id)
+                    setSelectedInvoiceMonth('')
+                  }}
+                  onTripleClick={() => {
+                    if (onManageCard) onManageCard(card)
+                  }}
+                />
+                
+                {/* Micro badge under card */}
+                <div className="w-full max-w-[370px] mt-2 px-1 flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3 text-zinc-400 dark:text-zinc-500" />
+                    Melhor dia: <strong className="text-emerald-600 dark:text-emerald-400">{card.bestPurchaseDay}</strong>
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-medium border ${
+                    card.isClosingSoon
+                      ? 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800/60'
+                      : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800'
+                  }`}>
+                    {card.daysUntilClosing === 0
+                      ? 'Fecha hoje!'
+                      : `Fecha em ${card.daysUntilClosing} dias`}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
