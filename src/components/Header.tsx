@@ -13,7 +13,6 @@ import {
   RotateCcw,
   SlidersHorizontal,
   ChevronDown,
-  Layers,
   Sun,
   Moon,
   Smartphone,
@@ -132,23 +131,8 @@ export function Header({
         {/* Top Control Bar */}
         <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-3">
           
-          {/* Logo & Brand Identity */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 ring-1 ring-white/20">
-              <Layers className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-950 font-bold" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold tracking-tight text-zinc-900 dark:text-white text-sm sm:text-base">AEGIS</span>
-                <span className="text-[9px] sm:text-[10px] font-bold tracking-widest uppercase px-1 sm:px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                  FINANCE
-                </span>
-              </div>
-              <p className="text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 font-normal hidden lg:block">
-                Fluxo de Caixa, Contas & Cartões
-              </p>
-            </div>
-          </div>
+          {/* Spacer for mobile */}
+          <div className="flex-1 md:hidden" />
 
           {/* Navigation Tabs (Desktop & Tablet: hidden on mobile) */}
           <nav className="hidden md:flex items-center p-1 bg-zinc-100 dark:bg-zinc-900/90 rounded-xl border border-zinc-200 dark:border-zinc-800/80 shadow-inner">
