@@ -2,10 +2,11 @@ import { useState, useRef, useEffect } from 'react'
 import type { CreditCard, CardBrand, CardColorScheme } from '../types'
 import {
   searchCardPresets,
+  autoDetectCardPreset,
   type CardPresetItem,
 } from '../lib/cardPresets'
 import { CreditCardVisual } from './CreditCardVisual'
-import { X, Plus, Sparkles, Search, Check, Layers, Trash2 } from 'lucide-react'
+import { X, Plus, Sparkles, Search, Check, Layers, Trash2, Building2 } from 'lucide-react'
 
 interface NewCardModalProps {
   isOpen: boolean
@@ -15,6 +16,24 @@ interface NewCardModalProps {
   onUpdate?: (id: string, updates: Partial<CreditCard>) => void
   onDelete?: (id: string) => void
 }
+
+const BANK_FILTERS = [
+  { id: 'all', label: 'Todos os Emissores' },
+  { id: 'itau', label: 'Itaú' },
+  { id: 'bradesco', label: 'Bradesco' },
+  { id: 'safra', label: 'Safra' },
+  { id: 'picpay', label: 'PicPay' },
+  { id: 'santander', label: 'Santander' },
+  { id: 'banco do brasil', label: 'Banco do Brasil' },
+  { id: 'caixa', label: 'Caixa' },
+  { id: 'inter', label: 'Inter' },
+  { id: 'c6', label: 'C6 Bank' },
+  { id: 'btg', label: 'BTG Pactual' },
+  { id: 'brb', label: 'BRB DUX' },
+  { id: 'ton', label: 'Ton / Stone' },
+  { id: 'sicoob', label: 'Sicoob / Sicredi' },
+  { id: 'xp', label: 'XP' },
+]
 
 export function NewCardModal({
   isOpen,
@@ -63,6 +82,7 @@ export function NewCardModal({
   // Estado da busca e autocomplete
   const [searchQuery, setSearchQuery] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [selectedBankFilter, setSelectedBankFilter] = useState<string>('all')
   const [selectedTierFilter, setSelectedTierFilter] = useState<'all' | 'basic' | 'intermediate' | 'premium'>('all')
   const searchContainerRef = useRef<HTMLDivElement>(null)
 
@@ -100,87 +120,26 @@ export function NewCardModal({
     setSearchQuery(val)
     setShowSuggestions(true)
 
-    // Detecção rápida por palavras-chave se o usuário estiver digitando
-    const lower = val.toLowerCase()
-    if (lower.includes('safra')) {
-      setBank('Banco Safra')
-      if (lower.includes('infinite') || lower.includes('ouro') || lower.includes('gold')) {
-        setColorScheme('gold')
-        setBrand('visa')
+    // Se o usuário estiver digitando (ao menos 3 letras), autodetecta banco, bandeira e detalhes conhecidos
+    if (val.trim().length >= 3) {
+      const detected = autoDetectCardPreset(val)
+      if (detected) {
+        setBank(detected.bank)
+        setBrand(detected.brand)
+        setColorScheme(detected.colorScheme)
+        setClosingDay(detected.closingDay)
+        setDueDay(detected.dueDay)
+        if (!notes && detected.notes) {
+          setNotes(detected.notes)
+        }
       }
-    } else if (lower.includes('sx') || lower.includes('santander')) {
-      setBank('Santander')
-      if (lower.includes('sx')) {
-        setBrand('visa')
-        setColorScheme('black')
-      }
-    } else if (lower.includes('click') || lower.includes('itau') || lower.includes('itaú')) {
-      setBank('Itaú Unibanco')
-      if (lower.includes('click')) {
-        setBrand('mastercard')
-        setColorScheme('black')
-      }
-    } else if (lower.includes('neo') || lower.includes('bradesco')) {
-      setBank('Bradesco')
-      if (lower.includes('neo')) {
-        setBrand('visa')
-        setColorScheme('titanium')
-      }
-    } else if (lower.includes('inter')) {
-      setBank('Banco Inter')
-      setBrand('mastercard')
-      setColorScheme('gold')
-    } else if (lower.includes('c6')) {
-      setBank('C6 Bank')
-      setBrand('mastercard')
-      setColorScheme('black')
-    } else if (lower.includes('caixa') || lower.includes('sim')) {
-      setBank('Caixa Econômica')
-      setBrand('visa')
-      setColorScheme('blue')
-    } else if (lower.includes('ourocard') || lower.includes('bb')) {
-      setBank('Banco do Brasil')
-      setBrand('visa')
-      setColorScheme('gold')
-    } else if (lower.includes('digio')) {
-      setBank('Digio')
-      setBrand('visa')
-      setColorScheme('blue')
-    } else if (lower.includes('neon')) {
-      setBank('Neon')
-      setBrand('visa')
-      setColorScheme('blue')
-    } else if (lower.includes('will')) {
-      setBank('Will Bank')
-      setBrand('mastercard')
-      setColorScheme('gold')
-    } else if (lower.includes('mercado') || lower.includes('mp')) {
-      setBank('Mercado Pago')
-      setBrand('visa')
-      setColorScheme('blue')
-    } else if (lower.includes('pagbank') || lower.includes('pagseguro')) {
-      setBank('PagBank')
-      setBrand('visa')
-      setColorScheme('emerald')
-    } else if (lower.includes('ton')) {
-      setBank('Ton')
-      setBrand('mastercard')
-      setColorScheme('emerald')
-    } else if (lower.includes('xp')) {
-      setBank('XP Investimentos')
-      setBrand('visa')
-      setColorScheme('titanium')
-    } else if (lower.includes('btg')) {
-      setBank('BTG Pactual')
-      setBrand('mastercard')
-      setColorScheme('blue')
     }
   }
 
   const numLimit = parseFloat(creditLimit) || 0
 
-  // Resultados da busca com filtro de classe
-  const searchResults = searchCardPresets(searchQuery).filter((item) => {
+  // Resultados da busca com filtro de banco e classe
+  const searchResults = searchCardPresets(searchQuery, selectedBankFilter).filter((item) => {
     if (selectedTierFilter === 'all') return true
     return item.tier === selectedTierFilter
   })
@@ -272,10 +231,41 @@ export function NewCardModal({
           </div>
 
           {/* BUSCA INTELIGENTE DE CARTÃO */}
-          <div ref={searchContainerRef} className="relative space-y-1.5">
-            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-              Buscar Modelo do Cartão (Autocompletar automático)
-            </label>
+          <div ref={searchContainerRef} className="relative space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Buscar Modelo do Cartão (Autocompletar automático)
+              </label>
+              <span className="text-[10px] text-zinc-400 font-medium">
+                Mais de 70 cartões do Brasil
+              </span>
+            </div>
+
+            {/* Atalhos Rápidos por Banco Emissor (Itaú, Bradesco, Safra, PicPay...) */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] no-scrollbar">
+              {BANK_FILTERS.map((b) => {
+                const isSelected = selectedBankFilter === b.id
+                return (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedBankFilter(b.id)
+                      setShowSuggestions(true)
+                    }}
+                    className={`px-2.5 py-1 rounded-lg shrink-0 transition-all font-medium border flex items-center gap-1 ${
+                      isSelected
+                        ? 'bg-emerald-500 text-zinc-950 font-bold border-emerald-400 shadow-sm'
+                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600'
+                    }`}
+                  >
+                    {b.id === 'all' && <Building2 className="w-3 h-3 opacity-70" />}
+                    {b.label}
+                  </button>
+                )
+              })}
+            </div>
+
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-400">
                 <Search className="w-4 h-4" />
@@ -286,7 +276,7 @@ export function NewCardModal({
                 value={name}
                 onFocus={() => setShowSuggestions(true)}
                 onChange={(e) => handleNameInput(e.target.value)}
-                placeholder="Ex: Santander SX, Itaú Click, Caixa Sim, Safra Platinum..."
+                placeholder="Ex: Itaú Click, Bradesco Neo, PicPay Card, Safra Infinite, Santander SX..."
                 className="w-full bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-white pl-9 pr-8 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs"
               />
               {name && (
@@ -305,57 +295,69 @@ export function NewCardModal({
 
             {/* Painel de sugestões e catálogo com filtro de classes */}
             {showSuggestions && (
-              <div className="absolute left-0 right-0 z-30 mt-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-2xl p-2.5 max-h-64 overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
+              <div className="absolute left-0 right-0 z-30 mt-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-2xl p-2.5 max-h-72 overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
                 
                 {/* Filtro por faixa/classe do cartão */}
-                <div className="flex items-center gap-1 pb-2 mb-2 border-b border-zinc-100 dark:border-zinc-800 text-[10px]">
-                  <span className="text-zinc-400 mr-1 flex items-center gap-1 font-medium">
-                    <Layers className="w-3 h-3" /> Faixa:
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedTierFilter('all')}
-                    className={`px-2 py-0.5 rounded-md transition-colors ${
-                      selectedTierFilter === 'all'
-                        ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold'
-                        : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    Todos
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedTierFilter('basic')}
-                    className={`px-2 py-0.5 rounded-md transition-colors ${
-                      selectedTierFilter === 'basic'
-                        ? 'bg-emerald-500 text-zinc-950 font-bold'
-                        : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    Básicos / Entrada
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedTierFilter('intermediate')}
-                    className={`px-2 py-0.5 rounded-md transition-colors ${
-                      selectedTierFilter === 'intermediate'
-                        ? 'bg-blue-500 text-white font-bold'
-                        : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    Platinum
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedTierFilter('premium')}
-                    className={`px-2 py-0.5 rounded-md transition-colors ${
-                      selectedTierFilter === 'premium'
-                        ? 'bg-amber-500 text-zinc-950 font-bold'
-                        : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    Alta Renda / Black
-                  </button>
+                <div className="flex flex-wrap items-center justify-between gap-1.5 pb-2 mb-2 border-b border-zinc-100 dark:border-zinc-800 text-[10px]">
+                  <div className="flex items-center gap-1">
+                    <span className="text-zinc-400 mr-1 flex items-center gap-1 font-medium">
+                      <Layers className="w-3 h-3" /> Faixa:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTierFilter('all')}
+                      className={`px-2 py-0.5 rounded-md transition-colors ${
+                        selectedTierFilter === 'all'
+                          ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold'
+                          : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                      }`}
+                    >
+                      Todos
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTierFilter('basic')}
+                      className={`px-2 py-0.5 rounded-md transition-colors ${
+                        selectedTierFilter === 'basic'
+                          ? 'bg-emerald-500 text-zinc-950 font-bold'
+                          : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                      }`}
+                    >
+                      Básicos / Entrada
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTierFilter('intermediate')}
+                      className={`px-2 py-0.5 rounded-md transition-colors ${
+                        selectedTierFilter === 'intermediate'
+                          ? 'bg-blue-500 text-white font-bold'
+                          : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                      }`}
+                    >
+                      Platinum
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTierFilter('premium')}
+                      className={`px-2 py-0.5 rounded-md transition-colors ${
+                        selectedTierFilter === 'premium'
+                          ? 'bg-amber-500 text-zinc-950 font-bold'
+                          : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                      }`}
+                    >
+                      Alta Renda / Black
+                    </button>
+                  </div>
+
+                  {selectedBankFilter !== 'all' && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedBankFilter('all')}
+                      className="text-emerald-500 hover:underline font-semibold ml-auto"
+                    >
+                      Limpar filtro de banco
+                    </button>
+                  )}
                 </div>
 
                 {/* Lista de resultados encontrados */}
