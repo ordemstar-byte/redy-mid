@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { CreditCard, BankAccount, Transaction, TransactionType, PaymentMethod, CategoryGroup } from '../types'
 import { DEFAULT_CATEGORIES } from '../lib/constants'
 import { calculateInvoiceDueDate, formatCurrency } from '../lib/utils'
-import { X, CreditCard as CreditCardIcon, Plus, DollarSign, Landmark } from 'lucide-react'
+import { X, CreditCard as CreditCardIcon, Plus, DollarSign, Landmark, Save, Trash2, Sparkles } from 'lucide-react'
 
 interface NewTransactionModalProps {
   isOpen: boolean
@@ -10,6 +10,9 @@ interface NewTransactionModalProps {
   cards: CreditCard[]
   accounts: BankAccount[]
   onSave: (data: Omit<Transaction, 'id' | 'createdAt'>, generateInstallments: boolean) => void
+  editTransaction?: Transaction | null
+  onUpdate?: (id: string, updates: Partial<Transaction>) => void
+  onDelete?: (id: string) => void
 }
 
 export function NewTransactionModal({
@@ -18,6 +21,9 @@ export function NewTransactionModal({
   cards,
   accounts,
   onSave,
+  editTransaction,
+  onUpdate,
+  onDelete,
 }: NewTransactionModalProps) {
   const now = new Date()
   const todayStr = now.toISOString().split('T')[0]
@@ -37,9 +43,47 @@ export function NewTransactionModal({
   const [time, setTime] = useState(defaultTime)
   const [status, setStatus] = useState<'paid' | 'pending'>('pending')
   const [notes, setNotes] = useState('')
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  // Sincroniza formulário com o lançamento a ser editado (ou reseta para novo)
+  useEffect(() => {
+    if (editTransaction) {
+      setType(editTransaction.type)
+      setDescription(editTransaction.description)
+      setCardStatementName(editTransaction.cardStatementName || '')
+      setAmount(String(editTransaction.amount))
+      setPaymentMethod(editTransaction.paymentMethod)
+      setCreditCardId(editTransaction.creditCardId || cards[0]?.id || '')
+      setBankAccountId(editTransaction.bankAccountId || accounts[0]?.id || '')
+      setCategory(editTransaction.category)
+      setInstallmentsTotal(editTransaction.installmentsTotal || 1)
+      setDate(editTransaction.date)
+      setTime(editTransaction.time || defaultTime)
+      setStatus(editTransaction.status)
+      setNotes(editTransaction.notes || '')
+      setConfirmDelete(false)
+    } else {
+      setType('expense')
+      setDescription('')
+      setCardStatementName('')
+      setAmount('')
+      setPaymentMethod('credit_card')
+      setCreditCardId(cards[0]?.id || '')
+      setBankAccountId(accounts[0]?.id || '')
+      setCategory('Supermercado & Feira')
+      setInstallmentsTotal(1)
+      setGenerateAllInstallments(true)
+      setDate(todayStr)
+      setTime(defaultTime)
+      setStatus('pending')
+      setNotes('')
+      setConfirmDelete(false)
+    }
+  }, [editTransaction, isOpen, cards, accounts])
 
   if (!isOpen) return null
 
+  const isEditing = Boolean(editTransaction)
   const isCard = paymentMethod === 'credit_card'
   const selectedCard = isCard ? cards.find((c) => c.id === creditCardId) : null
 
@@ -60,8 +104,8 @@ export function NewTransactionModal({
     const categoryGroup: CategoryGroup =
       type === 'income' ? 'revenue' : selectedCatObj?.group || 'essential'
 
-    onSave(
-      {
+    if (isEditing && editTransaction && onUpdate) {
+      onUpdate(editTransaction.id, {
         description: description.trim(),
         cardStatementName: isCard && cardStatementName.trim() ? cardStatementName.trim() : undefined,
         amount: numAmount,
@@ -70,7 +114,6 @@ export function NewTransactionModal({
         creditCardId: isCard ? creditCardId : undefined,
         bankAccountId: !isCard ? bankAccountId : undefined,
         installmentsTotal: isCard && installmentsTotal > 1 ? installmentsTotal : 1,
-        installmentNumber: 1,
         category,
         categoryGroup,
         date,
@@ -78,11 +121,43 @@ export function NewTransactionModal({
         dueDate: estimatedDueDate,
         status,
         notes: notes.trim() || undefined,
-      },
-      generateAllInstallments
-    )
+      })
+    } else {
+      onSave(
+        {
+          description: description.trim(),
+          cardStatementName: isCard && cardStatementName.trim() ? cardStatementName.trim() : undefined,
+          amount: numAmount,
+          type,
+          paymentMethod,
+          creditCardId: isCard ? creditCardId : undefined,
+          bankAccountId: !isCard ? bankAccountId : undefined,
+          installmentsTotal: isCard && installmentsTotal > 1 ? installmentsTotal : 1,
+          installmentNumber: 1,
+          category,
+          categoryGroup,
+          date,
+          time: time || undefined,
+          dueDate: estimatedDueDate,
+          status,
+          notes: notes.trim() || undefined,
+        },
+        generateAllInstallments
+      )
+    }
 
     onClose()
+  }
+
+  const handleDelete = () => {
+    if (!confirmDelete) {
+      setConfirmDelete(true)
+      return
+    }
+    if (editTransaction && onDelete) {
+      onDelete(editTransaction.id)
+      onClose()
+    }
   }
 
   return (
@@ -95,9 +170,20 @@ export function NewTransactionModal({
         {/* Header Fixo */}
         <div className="flex items-center justify-between p-4 sm:p-6 pb-3 sm:pb-4 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
           <div>
-            <h2 className="text-base font-bold text-zinc-900 dark:text-white">Novo Lançamento</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-zinc-900 dark:text-white">
+                {isEditing ? 'Editar Lançamento' : 'Novo Lançamento'}
+              </h2>
+              {isEditing && (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-300 dark:border-emerald-800/60">
+                  Edição
+                </span>
+              )}
+            </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-              Receitas, despesas em conta bancária ou compras no cartão
+              {isEditing
+                ? 'Atualize os detalhes, valor, vencimento ou status deste lançamento'
+                : 'Receitas, despesas em conta bancária ou compras no cartão'}
             </p>
           </div>
           <button
@@ -285,17 +371,31 @@ export function NewTransactionModal({
               </div>
 
               {installmentsTotal > 1 && (
-                <div className="flex items-center gap-2 pt-1">
-                  <input
-                    type="checkbox"
-                    id="genInstallments"
-                    checked={generateAllInstallments}
-                    onChange={(e) => setGenerateAllInstallments(e.target.checked)}
-                    className="w-4 h-4 rounded bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-purple-600 focus:ring-purple-500"
-                  />
-                  <label htmlFor="genInstallments" className="text-[11px] text-zinc-700 dark:text-zinc-300 cursor-pointer">
-                    Gerar automaticamente todas as {installmentsTotal} parcelas nas faturas seguintes
-                  </label>
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="genInstallments"
+                      checked={generateAllInstallments}
+                      onChange={(e) => setGenerateAllInstallments(e.target.checked)}
+                      className="w-4 h-4 rounded bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-purple-600 focus:ring-purple-500"
+                    />
+                    <label htmlFor="genInstallments" className="text-[11px] text-zinc-700 dark:text-zinc-300 cursor-pointer">
+                      Gerar automaticamente todas as {installmentsTotal} parcelas nas faturas seguintes
+                    </label>
+                  </div>
+
+                  {date < todayStr && (
+                    <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 text-[11px] text-purple-900 dark:text-purple-300 flex items-start gap-2">
+                      <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="font-semibold block text-purple-950 dark:text-purple-200">
+                          Contabilidade Retroativa Inteligente:
+                        </strong>
+                        Como esta compra é de meses anteriores, as parcelas já vencidas até hoje serão contabilizadas automaticamente como <strong>pagas</strong>. Apenas as parcelas a partir da fatura atual comprometerão o limite do cartão!
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -413,21 +513,49 @@ export function NewTransactionModal({
           </div>
 
           {/* Botões de Ação */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-1.5"
-            >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span>Salvar Lançamento</span>
-            </button>
+          <div className="flex items-center justify-between gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+            <div>
+              {isEditing && onDelete && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                    confirmDelete
+                      ? 'bg-rose-600 text-white shadow-md'
+                      : 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10'
+                  }`}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{confirmDelete ? 'Confirmar Exclusão?' : 'Excluir'}</span>
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-1.5"
+              >
+                {isEditing ? (
+                  <>
+                    <Save className="w-4 h-4" />
+                    <span>Atualizar Lançamento</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 stroke-[2.5]" />
+                    <span>Salvar Lançamento</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
         </form>

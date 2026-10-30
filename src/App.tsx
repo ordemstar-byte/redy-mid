@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { BankAccount, CreditCard } from './types'
+import type { BankAccount, CreditCard, Transaction } from './types'
 import { useFinanceStore } from './hooks/useFinanceStore'
 import { useCashFlow } from './hooks/useCashFlow'
 import { useCreditCards } from './hooks/useCreditCards'
@@ -13,6 +13,7 @@ import { NewTransactionModal } from './components/NewTransactionModal'
 import { NewCardModal } from './components/NewCardModal'
 import { NewAccountModal } from './components/NewAccountModal'
 import { ManageEntityModal } from './components/ManageEntityModal'
+import { ManageTransactionModal } from './components/ManageTransactionModal'
 import { PinLockScreen } from './components/PinLockScreen'
 import { BottomNavBar } from './components/BottomNavBar'
 
@@ -39,6 +40,7 @@ export function App() {
     updateCard,
     deleteCard,
     addTransaction,
+    updateTransaction,
     deleteTransaction,
     toggleTransactionStatus,
     payCardInvoice,
@@ -72,8 +74,10 @@ export function App() {
   // Gerenciamento e Edição (3 Cliques ou Ações Rápidas)
   const [managingAccount, setManagingAccount] = useState<BankAccount | null>(null)
   const [managingCard, setManagingCard] = useState<CreditCard | null>(null)
+  const [managingTransaction, setManagingTransaction] = useState<Transaction | null>(null)
   const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null)
   const [editingCard, setEditingCard] = useState<CreditCard | null>(null)
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
 
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
@@ -166,7 +170,15 @@ export function App() {
             privacyMode={privacyMode}
             onToggleStatus={toggleTransactionStatus}
             onDeleteTransaction={deleteTransaction}
-            onOpenNewTransaction={() => setIsTransactionModalOpen(true)}
+            onOpenNewTransaction={() => {
+              setEditingTransaction(null)
+              setIsTransactionModalOpen(true)
+            }}
+            onManageTransaction={(tx) => setManagingTransaction(tx)}
+            onEditTransaction={(tx) => {
+              setEditingTransaction(tx)
+              setIsTransactionModalOpen(true)
+            }}
           />
         )}
 
@@ -187,13 +199,21 @@ export function App() {
             onManageAccount={(acc) => {
               setManagingAccount(acc)
             }}
-            onOpenNewTransaction={() => setIsTransactionModalOpen(true)}
+            onOpenNewTransaction={() => {
+              setEditingTransaction(null)
+              setIsTransactionModalOpen(true)
+            }}
             onDeleteAccount={(accId) => {
               deleteAccount(accId)
               showToast('Conta bancária removida.')
             }}
             onDeleteTransaction={deleteTransaction}
             onToggleStatus={toggleTransactionStatus}
+            onManageTransaction={(tx) => setManagingTransaction(tx)}
+            onEditTransaction={(tx) => {
+              setEditingTransaction(tx)
+              setIsTransactionModalOpen(true)
+            }}
           />
         )}
 
@@ -214,7 +234,10 @@ export function App() {
             onManageCard={(card) => {
               setManagingCard(card)
             }}
-            onOpenNewTransaction={() => setIsTransactionModalOpen(true)}
+            onOpenNewTransaction={() => {
+              setEditingTransaction(null)
+              setIsTransactionModalOpen(true)
+            }}
             onPayInvoice={(cardId, invTxs) => {
               payCardInvoice(cardId, invTxs)
               showToast('Fatura marcada como liquidada no fluxo!')
@@ -224,6 +247,11 @@ export function App() {
               showToast('Cartão removido.')
             }}
             onDeleteTransaction={deleteTransaction}
+            onManageTransaction={(tx) => setManagingTransaction(tx)}
+            onEditTransaction={(tx) => {
+              setEditingTransaction(tx)
+              setIsTransactionModalOpen(true)
+            }}
           />
         )}
 
@@ -257,12 +285,49 @@ export function App() {
       {/* Modals */}
       <NewTransactionModal
         isOpen={isTransactionModalOpen}
-        onClose={() => setIsTransactionModalOpen(false)}
+        onClose={() => {
+          setIsTransactionModalOpen(false)
+          setEditingTransaction(null)
+        }}
         cards={cards}
         accounts={accounts}
+        editTransaction={editingTransaction}
         onSave={(txData, generateInstallments) => {
           addTransaction(txData, generateInstallments)
           showToast('Lançamento adicionado com sucesso!')
+        }}
+        onUpdate={(id, updates) => {
+          updateTransaction(id, updates)
+          showToast('Lançamento atualizado com sucesso!')
+        }}
+        onDelete={(id) => {
+          deleteTransaction(id)
+          showToast('Lançamento excluído com sucesso.')
+        }}
+      />
+
+      {/* Modal de Gestão Rápida (3 Cliques) para Lançamentos */}
+      <ManageTransactionModal
+        isOpen={Boolean(managingTransaction)}
+        onClose={() => setManagingTransaction(null)}
+        transaction={managingTransaction}
+        cards={cards}
+        accounts={accounts}
+        onEdit={(tx) => {
+          setEditingTransaction(tx)
+          setIsTransactionModalOpen(true)
+        }}
+        onDelete={(id) => {
+          deleteTransaction(id)
+          showToast('Lançamento excluído com sucesso.')
+        }}
+        onToggleStatus={(id) => {
+          toggleTransactionStatus(id)
+          setManagingTransaction((prev) =>
+            prev && prev.id === id
+              ? { ...prev, status: prev.status === 'paid' ? 'pending' : 'paid' }
+              : prev
+          )
         }}
       />
 

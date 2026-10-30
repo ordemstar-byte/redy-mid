@@ -301,7 +301,7 @@ export async function fetchTransactionsFromSupabase(): Promise<Transaction[]> {
 export async function saveTransactionToSupabase(tx: Transaction): Promise<boolean> {
   if (!isSupabaseConfigured) return false
 
-  const payload = {
+  const payload: Record<string, unknown> = {
     id: tx.id,
     description: tx.description,
     card_statement_name: tx.cardStatementName || null,
@@ -326,7 +326,15 @@ export async function saveTransactionToSupabase(tx: Transaction): Promise<boolea
   }
 
   try {
-    const { error } = await supabase.from('transactions').upsert(payload)
+    let { error } = await supabase.from('transactions').upsert(payload)
+
+    // Se falhar porque a coluna card_statement_name ainda não foi criada no banco
+    if (error && (error.code === 'PGRST204' || error.code === '42703' || error.message?.includes('card_statement_name'))) {
+      delete payload.card_statement_name
+      const retry = await supabase.from('transactions').upsert(payload)
+      error = retry.error
+    }
+
     if (error) {
       console.error('Erro ao salvar transação no Supabase:', error.message)
       return false
@@ -341,7 +349,7 @@ export async function saveTransactionToSupabase(tx: Transaction): Promise<boolea
 export async function saveTransactionsBatchToSupabase(txs: Transaction[]): Promise<boolean> {
   if (!isSupabaseConfigured || txs.length === 0) return false
 
-  const payloads = txs.map((tx) => ({
+  const payloads: Record<string, unknown>[] = txs.map((tx) => ({
     id: tx.id,
     description: tx.description,
     card_statement_name: tx.cardStatementName || null,
@@ -366,7 +374,18 @@ export async function saveTransactionsBatchToSupabase(txs: Transaction[]): Promi
   }))
 
   try {
-    const { error } = await supabase.from('transactions').upsert(payloads)
+    let { error } = await supabase.from('transactions').upsert(payloads)
+
+    // Se falhar por conta da coluna card_statement_name inexistente no schema do banco
+    if (error && (error.code === 'PGRST204' || error.code === '42703' || error.message?.includes('card_statement_name'))) {
+      const strippedPayloads = payloads.map((p) => {
+        const { card_statement_name, ...rest } = p
+        return rest
+      })
+      const retry = await supabase.from('transactions').upsert(strippedPayloads)
+      error = retry.error
+    }
+
     if (error) {
       console.error('Erro ao salvar lote de transações no Supabase:', error.message)
       return false
@@ -402,7 +421,15 @@ export async function updateTransactionInSupabase(id: string, updates: Partial<T
   if (updates.tags !== undefined) payload.tags = updates.tags || null
 
   try {
-    const { error } = await supabase.from('transactions').update(payload).eq('id', id)
+    let { error } = await supabase.from('transactions').update(payload).eq('id', id)
+
+    // Se falhar por conta de card_statement_name
+    if (error && (error.code === 'PGRST204' || error.code === '42703' || error.message?.includes('card_statement_name'))) {
+      delete payload.card_statement_name
+      const retry = await supabase.from('transactions').update(payload).eq('id', id)
+      error = retry.error
+    }
+
     if (error) {
       console.error('Erro ao atualizar transação no Supabase:', error.message)
       return false

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import type { Transaction, CashFlowSummary, CashFlowDay, CreditCard } from '../types'
 import { formatCurrency, formatDateBR } from '../lib/utils'
 import { CashFlowChart } from './CashFlowChart'
@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   Search,
   Trash2,
+  Edit3,
   CreditCard as CreditCardIcon,
   ArrowUpRight,
   ArrowDownRight,
@@ -24,6 +25,8 @@ interface CashFlowViewProps {
   onToggleStatus: (id: string) => void
   onDeleteTransaction: (id: string) => void
   onOpenNewTransaction: () => void
+  onManageTransaction?: (tx: Transaction) => void
+  onEditTransaction?: (tx: Transaction) => void
 }
 
 export function CashFlowView({
@@ -35,10 +38,41 @@ export function CashFlowView({
   onToggleStatus,
   onDeleteTransaction,
   onOpenNewTransaction,
+  onManageTransaction,
+  onEditTransaction,
 }: CashFlowViewProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense' | 'card'>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending'>('all')
+
+  const clickTrackers = useRef<Map<string, { count: number; time: number }>>(new Map())
+
+  const handleTxRowClick = (e: React.MouseEvent, tx: Transaction) => {
+    // Se o clique veio de um botão interativo interno, ignora o 3-cliques de linha
+    if ((e.target as HTMLElement).closest('button')) return
+
+    const now = Date.now()
+    const tracker = clickTrackers.current.get(tx.id) || { count: 0, time: 0 }
+    const diff = now - tracker.time
+
+    if (diff < 500) {
+      tracker.count += 1
+    } else {
+      tracker.count = 1
+    }
+    tracker.time = now
+    clickTrackers.current.set(tx.id, tracker)
+
+    if (tracker.count >= 3 || e.detail >= 3) {
+      tracker.count = 0
+      clickTrackers.current.set(tx.id, tracker)
+      if (onManageTransaction) {
+        onManageTransaction(tx)
+      } else if (onEditTransaction) {
+        onEditTransaction(tx)
+      }
+    }
+  }
 
   // Filtros aplicados
   const filteredTransactions = useMemo(() => {
@@ -291,7 +325,9 @@ export function CashFlowView({
                   return (
                     <tr
                       key={tx.id}
-                      className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors group"
+                      onClick={(e) => handleTxRowClick(e, tx)}
+                      title="Clique 3 vezes para gerenciar / editar este lançamento"
+                      className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors group cursor-pointer select-none"
                     >
                       {/* Status Toggle Button */}
                       <td className="py-3 px-3 text-center">
@@ -373,13 +409,24 @@ export function CashFlowView({
 
                       {/* Ações */}
                       <td className="py-3 px-3 text-center">
-                        <button
-                          onClick={() => onDeleteTransaction(tx.id)}
-                          title="Excluir lançamento"
-                          className="p-1 rounded text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors opacity-0 group-hover:opacity-100"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            onClick={() => onManageTransaction ? onManageTransaction(tx) : onEditTransaction?.(tx)}
+                            title="Gerenciar / Editar lançamento (ou 3 cliques)"
+                            className="p-1 rounded text-zinc-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onDeleteTransaction(tx.id)}
+                            title="Excluir lançamento"
+                            className="p-1 rounded text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -411,7 +458,9 @@ export function CashFlowView({
               return (
                 <div
                   key={tx.id}
-                  className="py-3 px-1 flex items-center justify-between gap-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors"
+                  onClick={(e) => handleTxRowClick(e, tx)}
+                  title="Clique 3 vezes para gerenciar este lançamento"
+                  className="py-3 px-1 flex items-center justify-between gap-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors cursor-pointer select-none active:bg-zinc-100 dark:active:bg-zinc-800/60"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <button
@@ -467,6 +516,14 @@ export function CashFlowView({
                         </div>
                       )}
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => onManageTransaction ? onManageTransaction(tx) : onEditTransaction?.(tx)}
+                      className="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-500 active:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                      title="Editar (ou 3 cliques)"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
                     <button
                       type="button"
                       onClick={() => onDeleteTransaction(tx.id)}

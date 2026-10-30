@@ -138,11 +138,34 @@ export function useFinanceStore() {
 
         if (!isMounted) return
 
-        // Supabase é SEMPRE a verdade absoluta em tempo real.
-        // Se no Supabase for vazio [], reflete vazio sem ressuscitar cache local!
         setAccounts(remoteAccounts)
         setCards(remoteCards)
-        setTransactions(remoteTxs)
+
+        // Supabase sincronização segura:
+        // Se o Supabase retornou transações, usa as do Supabase.
+        // Se o Supabase veio vazio mas temos transações salvas localmente no localStorage,
+        // sobe essas transações automaticamente para o Supabase para não perder os dados!
+        if (remoteTxs.length > 0) {
+          setTransactions(remoteTxs)
+        } else {
+          try {
+            const localSaved = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS)
+            if (localSaved) {
+              const parsed: Transaction[] = JSON.parse(localSaved)
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                setTransactions(parsed)
+                saveTransactionsBatchToSupabase(parsed)
+              } else {
+                setTransactions([])
+              }
+            } else {
+              setTransactions([])
+            }
+          } catch {
+            setTransactions([])
+          }
+        }
+
         setIsCloudConnected(true)
       } catch (err) {
         console.error('Erro na sincronização com Supabase:', err)
@@ -261,6 +284,8 @@ export function useFinanceStore() {
       const card = isCard ? cards.find((c) => c.id === data.creditCardId) : null
 
       const totalInstallments = data.installmentsTotal || 1
+      const today = new Date()
+      const todayStr = today.toISOString().split('T')[0]
 
       // Se for compra parcelada no cartão e usuário pediu para gerar todas as parcelas
       if (isCard && card && totalInstallments > 1 && generateInstallments) {
@@ -287,6 +312,16 @@ export function useFinanceStore() {
             card.dueDay
           )
 
+          // Contabilidade retroativa inteligente de compras parceladas:
+          // Se a fatura dessa parcela já venceu antes de hoje (dueDate < todayStr),
+          // ela já foi liquidada/paga nos meses anteriores e NÃO consome o limite!
+          const isPastInvoice = dueDate < todayStr
+          const instStatus: Transaction['status'] = isPastInvoice
+            ? 'paid'
+            : i === 1 && data.status === 'paid'
+            ? 'paid'
+            : 'pending'
+
           newTransactions.push({
             id: `tx_${Date.now()}_inst_${i}`,
             description: `${data.description} (${i}/${totalInstallments}x)`,
@@ -304,7 +339,7 @@ export function useFinanceStore() {
             date: instDateStr,
             time: data.time || undefined,
             dueDate: dueDate,
-            status: i === 1 && data.status === 'paid' ? 'paid' : 'pending',
+            status: instStatus,
             notes: data.notes,
             tags: data.tags,
             createdAt: nowIso,
@@ -328,9 +363,16 @@ export function useFinanceStore() {
         calculatedDueDate = dueDate
       }
 
+      // Se for compra à vista no cartão em data retroativa com fatura já vencida antes de hoje:
+      let singleStatus = data.status
+      if (isCard && calculatedDueDate && calculatedDueDate < todayStr && data.status === 'pending') {
+        singleStatus = 'paid'
+      }
+
       const newTx: Transaction = {
         ...data,
         dueDate: calculatedDueDate,
+        status: singleStatus,
         id: `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         createdAt: nowIso,
       }
@@ -346,11 +388,22 @@ export function useFinanceStore() {
   const updateTransaction = useCallback(
     (id: string, updates: Partial<Transaction>) => {
       setTransactions((prev) =>
-        prev.map((tx) => (tx.id === id ? { ...tx, ...updates } : tx))
+        prev.map((tx) => {
+          if (tx.id !== id) return tx
+          const merged = { ...tx, ...updates }
+          if (merged.paymentMethod === 'credit_card' && merged.creditCardId && updates.date) {
+            const card = cards.find((c) => c.id === merged.creditCardId)
+            if (card) {
+              const { dueDate } = calculateInvoiceDueDate(updates.date, card.closingDay, card.dueDay)
+              merged.dueDate = dueDate
+            }
+          }
+          return merged
+        })
       )
       updateTransactionInSupabase(id, updates)
     },
-    []
+    [cards]
   )
 
   const deleteTransaction = useCallback((id: string) => {
