@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { CreditCard, Transaction, CardsMetricsSummary, CardInvoice } from '../types'
-import { getBestPurchaseDay, getDaysUntilClosing } from '../lib/utils'
+import { getBestPurchaseDay, getDaysUntilClosing, getInvoiceCycleDates } from '../lib/utils'
 
 interface UseCreditCardsProps {
   cards: CreditCard[]
@@ -63,9 +63,7 @@ export function useCreditCards({ cards, transactions }: UseCreditCardsProps) {
       // Constrói faturas
       const allInvoices: CardInvoice[] = Array.from(invoicesMap.entries())
         .map(([mYear, txs]) => {
-          const [invYear, invMonth] = mYear.split('-').map(Number)
-          const closingDate = `${invYear}-${String(invMonth).padStart(2, '0')}-${String(card.closingDay).padStart(2, '0')}`
-          const dueDate = `${invYear}-${String(invMonth).padStart(2, '0')}-${String(card.dueDay).padStart(2, '0')}`
+          const { closingDate, dueDate } = getInvoiceCycleDates(mYear, card.closingDay, card.dueDay)
           const totalAmount = txs.reduce((s, t) => s + t.amount, 0)
           const allPaid = txs.length > 0 && txs.every((t) => t.status === 'paid')
           
@@ -90,25 +88,27 @@ export function useCreditCards({ cards, transactions }: UseCreditCardsProps) {
         })
         .sort((a, b) => b.monthYear.localeCompare(a.monthYear))
 
+      const currentCycle = getInvoiceCycleDates(currentMonthYear, card.closingDay, card.dueDay)
       // Fatura Atual (ou mock vazio se não houver gastos)
       const currentInvoice = allInvoices.find((inv) => inv.monthYear === currentMonthYear) || {
         cardId: card.id,
         cardName: card.name,
         monthYear: currentMonthYear,
-        closingDate: `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(card.closingDay).padStart(2, '0')}`,
-        dueDate: `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(card.dueDay).padStart(2, '0')}`,
+        closingDate: currentCycle.closingDate,
+        dueDate: currentCycle.dueDate,
         status: 'open',
         totalAmount: 0,
         transactions: [],
       }
 
+      const nextCycle = getInvoiceCycleDates(nextMonthYear, card.closingDay, card.dueDay)
       // Próxima Fatura
       const nextInvoice = allInvoices.find((inv) => inv.monthYear === nextMonthYear) || {
         cardId: card.id,
         cardName: card.name,
         monthYear: nextMonthYear,
-        closingDate: `${nextYearVal}-${String(nextMonthVal).padStart(2, '0')}-${String(card.closingDay).padStart(2, '0')}`,
-        dueDate: `${nextYearVal}-${String(nextMonthVal).padStart(2, '0')}-${String(card.dueDay).padStart(2, '0')}`,
+        closingDate: nextCycle.closingDate,
+        dueDate: nextCycle.dueDate,
         status: 'open',
         totalAmount: 0,
         transactions: [],

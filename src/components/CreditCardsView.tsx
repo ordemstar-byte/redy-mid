@@ -275,9 +275,9 @@ export function CreditCardsView({
                 
                 {/* Micro badge under card */}
                 <div className="w-full max-w-[370px] mt-2 px-1 flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3 text-zinc-400 dark:text-zinc-500" />
-                    Melhor dia: <strong className="text-emerald-600 dark:text-emerald-400">{card.bestPurchaseDay}</strong>
+                  <span className="flex items-center gap-1 font-mono-numbers">
+                    <Calendar className="w-3 h-3 text-purple-400 dark:text-purple-500" />
+                    Fecha dia <strong className="text-zinc-700 dark:text-zinc-300">{card.closingDay}</strong> • Vence dia <strong className="text-zinc-700 dark:text-zinc-300">{card.dueDay}</strong>
                   </span>
                   <span className={`px-2 py-0.5 rounded-md text-[10px] font-medium border ${
                     card.isClosingSoon
@@ -286,7 +286,7 @@ export function CreditCardsView({
                   }`}>
                     {card.daysUntilClosing === 0
                       ? 'Fecha hoje!'
-                      : `Fecha em ${card.daysUntilClosing} dias`}
+                      : `Fecha em ${card.daysUntilClosing}d`}
                   </span>
                 </div>
               </div>

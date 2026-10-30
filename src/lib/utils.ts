@@ -142,3 +142,37 @@ export function getDaysUntilClosing(closingDay: number): { days: number; isClosi
     isClosingSoon: days <= 3,
   }
 }
+
+/**
+ * Retorna as datas de fechamento e vencimento de um ciclo de fatura,
+ * considerando corretamente quando o vencimento é no mês seguinte ao fechamento.
+ */
+export function getInvoiceCycleDates(
+  dueYearMonth: string,
+  closingDay: number,
+  dueDay: number
+): { closingDate: string; dueDate: string } {
+  const [dueYear, dueMonth] = dueYearMonth.split('-').map(Number)
+  const dueDaysInMonth = new Date(dueYear, dueMonth, 0).getDate()
+  const clampedDueDay = Math.min(dueDay, dueDaysInMonth)
+  const dueDate = `${dueYear}-${String(dueMonth).padStart(2, '0')}-${String(clampedDueDay).padStart(2, '0')}`
+
+  let closeYear = dueYear
+  let closeMonth = dueMonth
+
+  // Se o dia de vencimento for menor que o dia de fechamento (ex: fecha dia 28, vence dia 10),
+  // o fechamento ocorreu no mês anterior ao vencimento
+  if (dueDay < closingDay) {
+    closeMonth -= 1
+    if (closeMonth < 1) {
+      closeMonth = 12
+      closeYear -= 1
+    }
+  }
+
+  const closeDaysInMonth = new Date(closeYear, closeMonth, 0).getDate()
+  const clampedCloseDay = Math.min(closingDay, closeDaysInMonth)
+  const closingDate = `${closeYear}-${String(closeMonth).padStart(2, '0')}-${String(clampedCloseDay).padStart(2, '0')}`
+
+  return { closingDate, dueDate }
+}

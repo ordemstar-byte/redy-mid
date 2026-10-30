@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import type { CreditCard, BankAccount, Transaction, TransactionType, PaymentMethod, CategoryGroup } from '../types'
 import { DEFAULT_CATEGORIES } from '../lib/constants'
 import { calculateInvoiceDueDate, formatCurrency } from '../lib/utils'
-import { X, CreditCard as CreditCardIcon, Plus, DollarSign, Landmark, Save, Trash2, Sparkles } from 'lucide-react'
+import { X, CreditCard as CreditCardIcon, Plus, DollarSign, Landmark, Save, Trash2, Sparkles, Calendar } from 'lucide-react'
 
 interface NewTransactionModalProps {
   isOpen: boolean
@@ -41,6 +41,8 @@ export function NewTransactionModal({
   const [generateAllInstallments, setGenerateAllInstallments] = useState(true)
   const [date, setDate] = useState(todayStr)
   const [time, setTime] = useState(defaultTime)
+  const [dueDate, setDueDate] = useState<string>(todayStr)
+  const [isDueDateManuallyEdited, setIsDueDateManuallyEdited] = useState(false)
   const [status, setStatus] = useState<'paid' | 'pending'>('pending')
   const [notes, setNotes] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -59,6 +61,8 @@ export function NewTransactionModal({
       setInstallmentsTotal(editTransaction.installmentsTotal || 1)
       setDate(editTransaction.date)
       setTime(editTransaction.time || defaultTime)
+      setDueDate(editTransaction.dueDate || editTransaction.date)
+      setIsDueDateManuallyEdited(true)
       setStatus(editTransaction.status)
       setNotes(editTransaction.notes || '')
       setConfirmDelete(false)
@@ -68,31 +72,45 @@ export function NewTransactionModal({
       setCardStatementName('')
       setAmount('')
       setPaymentMethod('credit_card')
-      setCreditCardId(cards[0]?.id || '')
+      const initialCardId = cards[0]?.id || ''
+      setCreditCardId(initialCardId)
       setBankAccountId(accounts[0]?.id || '')
       setCategory('Supermercado & Feira')
       setInstallmentsTotal(1)
       setGenerateAllInstallments(true)
       setDate(todayStr)
       setTime(defaultTime)
+      setIsDueDateManuallyEdited(false)
+      const firstCard = cards.find((c) => c.id === initialCardId) || cards[0]
+      if (firstCard) {
+        const { dueDate: initialDue } = calculateInvoiceDueDate(todayStr, firstCard.closingDay, firstCard.dueDay)
+        setDueDate(initialDue)
+      } else {
+        setDueDate(todayStr)
+      }
       setStatus('pending')
       setNotes('')
       setConfirmDelete(false)
     }
   }, [editTransaction, isOpen, cards, accounts])
 
-  if (!isOpen) return null
-
   const isEditing = Boolean(editTransaction)
   const isCard = paymentMethod === 'credit_card'
   const selectedCard = isCard ? cards.find((c) => c.id === creditCardId) : null
 
-  // Calcula a data de vencimento automática com base no cartão
-  let estimatedDueDate = date
-  if (isCard && selectedCard) {
-    const { dueDate } = calculateInvoiceDueDate(date, selectedCard.closingDay, selectedCard.dueDay)
-    estimatedDueDate = dueDate
-  }
+  // Atualiza data de vencimento automática quando o usuário altera a data da compra ou o cartão
+  useEffect(() => {
+    if (!isOpen || isEditing || isDueDateManuallyEdited) return
+
+    if (isCard && selectedCard) {
+      const { dueDate: autoDue } = calculateInvoiceDueDate(date, selectedCard.closingDay, selectedCard.dueDay)
+      setDueDate(autoDue)
+    } else {
+      setDueDate(date)
+    }
+  }, [date, creditCardId, isCard, selectedCard, isDueDateManuallyEdited, isOpen, isEditing])
+
+  if (!isOpen) return null
 
   const numAmount = parseFloat(amount.replace(',', '.')) || 0
 
@@ -103,6 +121,8 @@ export function NewTransactionModal({
     const selectedCatObj = DEFAULT_CATEGORIES.find((c) => c.name === category)
     const categoryGroup: CategoryGroup =
       type === 'income' ? 'revenue' : selectedCatObj?.group || 'essential'
+
+    const finalDueDate = dueDate || date
 
     if (isEditing && editTransaction && onUpdate) {
       onUpdate(editTransaction.id, {
@@ -118,7 +138,7 @@ export function NewTransactionModal({
         categoryGroup,
         date,
         time: time || undefined,
-        dueDate: estimatedDueDate,
+        dueDate: finalDueDate,
         status,
         notes: notes.trim() || undefined,
       })
@@ -138,7 +158,7 @@ export function NewTransactionModal({
           categoryGroup,
           date,
           time: time || undefined,
-          dueDate: estimatedDueDate,
+          dueDate: finalDueDate,
           status,
           notes: notes.trim() || undefined,
         },
@@ -399,6 +419,66 @@ export function NewTransactionModal({
                 </div>
               )}
 
+              {/* Ciclo e Data de Vencimento da Fatura do Cartão */}
+              <div className="p-3 rounded-xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-purple-900 dark:text-purple-300 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-purple-500" />
+                    Ciclo e Vencimento da Fatura
+                  </span>
+                  {selectedCard && (
+                    <span className="text-[11px] font-mono text-purple-700 dark:text-purple-300">
+                      Fecha dia <strong>{selectedCard.closingDay}</strong> • Vence dia <strong>{selectedCard.dueDay}</strong>
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                  <div>
+                    <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                      Data de Vencimento da Fatura
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={dueDate}
+                      onChange={(e) => {
+                        setDueDate(e.target.value)
+                        setIsDueDateManuallyEdited(true)
+                      }}
+                      className="w-full bg-white dark:bg-zinc-900 font-mono-numbers text-xs text-zinc-900 dark:text-zinc-200 px-3 py-2 rounded-xl border border-purple-300 dark:border-purple-800/80 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                    />
+                  </div>
+
+                  <div className="flex flex-col justify-center text-[10px] text-zinc-500 dark:text-zinc-400 pt-1">
+                    {isDueDateManuallyEdited ? (
+                      <div className="space-y-1">
+                        <span className="text-purple-600 dark:text-purple-400 font-medium block">
+                          Vencimento personalizado
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsDueDateManuallyEdited(false)
+                            if (selectedCard) {
+                              const { dueDate: autoDue } = calculateInvoiceDueDate(date, selectedCard.closingDay, selectedCard.dueDay)
+                              setDueDate(autoDue)
+                            }
+                          }}
+                          className="text-[10px] text-purple-600 dark:text-purple-400 hover:underline font-semibold"
+                        >
+                          ↺ Recalcular pelo ciclo do cartão
+                        </button>
+                      </div>
+                    ) : (
+                      <span>
+                        Calculado automaticamente com base na data da compra e no ciclo (fecha dia {selectedCard?.closingDay || 10}, vence dia {selectedCard?.dueDay || 17}).
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* Nome como aparece na fatura do cartão */}
               <div className="pt-2 border-t border-purple-200/60 dark:border-purple-900/40">
                 <div className="flex items-center justify-between mb-1">
@@ -440,33 +520,79 @@ export function NewTransactionModal({
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
-                  Data da Operação
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full bg-zinc-50 dark:bg-zinc-950 text-xs font-mono-numbers text-zinc-900 dark:text-zinc-200 px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                />
-              </div>
+            {!isCard ? (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                    Data da Operação
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 text-xs font-mono-numbers text-zinc-900 dark:text-zinc-200 px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
-                  Horário (HH:mm)
-                </label>
-                <input
-                  type="time"
-                  required
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  className="w-full bg-zinc-50 dark:bg-zinc-950 text-xs font-mono-numbers text-zinc-900 dark:text-zinc-200 px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                />
+                <div>
+                  <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                    Data de Vencimento
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={dueDate}
+                    onChange={(e) => {
+                      setDueDate(e.target.value)
+                      setIsDueDateManuallyEdited(true)
+                    }}
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 text-xs font-mono-numbers text-zinc-900 dark:text-zinc-200 px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                    Horário (HH:mm)
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 text-xs font-mono-numbers text-zinc-900 dark:text-zinc-200 px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                    Data da Compra
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 text-xs font-mono-numbers text-zinc-900 dark:text-zinc-200 px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                    Horário (HH:mm)
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 text-xs font-mono-numbers text-zinc-900 dark:text-zinc-200 px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Observações */}

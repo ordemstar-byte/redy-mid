@@ -139,9 +139,26 @@ export function useFinanceStore() {
         if (!isMounted) return
 
         setAccounts(remoteAccounts)
-        setCards(remoteCards)
 
-        // Supabase sincronização segura:
+        // Sincronização segura de cartões:
+        if (remoteCards.length > 0) {
+          setCards(remoteCards)
+        } else {
+          try {
+            const localSavedCards = localStorage.getItem(STORAGE_KEYS.CARDS)
+            if (localSavedCards) {
+              const parsedCards: CreditCard[] = JSON.parse(localSavedCards)
+              if (Array.isArray(parsedCards) && parsedCards.length > 0) {
+                setCards(parsedCards)
+                parsedCards.forEach((c) => saveCardToSupabase(c))
+              }
+            }
+          } catch (e) {
+            console.error('Erro ao recuperar cartões do localStorage:', e)
+          }
+        }
+
+        // Supabase sincronização segura de transações:
         // Se o Supabase retornou transações, usa as do Supabase.
         // Se o Supabase veio vazio mas temos transações salvas localmente no localStorage,
         // sobe essas transações automaticamente para o Supabase para não perder os dados!
@@ -265,7 +282,33 @@ export function useFinanceStore() {
     )
     // Atualiza permanentemente no Supabase
     updateCardInSupabase(id, updates)
-  }, [])
+
+    // Se o dia de fechamento ou vencimento do cartão foi alterado, sincroniza
+    // o vencimento das faturas e parcelas pendentes deste cartão
+    if (updates.closingDay !== undefined || updates.dueDay !== undefined) {
+      setTransactions((prevTxs) => {
+        let hasChanges = false
+        const updatedTxs = prevTxs.map((tx) => {
+          if (tx.creditCardId === id && tx.paymentMethod === 'credit_card' && tx.status === 'pending') {
+            const cardObj = cards.find((c) => c.id === id)
+            const newClosing = updates.closingDay ?? cardObj?.closingDay ?? 10
+            const newDue = updates.dueDay ?? cardObj?.dueDay ?? 17
+            const { dueDate: newDueDate } = calculateInvoiceDueDate(tx.date, newClosing, newDue)
+            if (newDueDate !== tx.dueDate) {
+              hasChanges = true
+              return { ...tx, dueDate: newDueDate }
+            }
+          }
+          return tx
+        })
+
+        if (hasChanges) {
+          saveTransactionsBatchToSupabase(updatedTxs)
+        }
+        return updatedTxs
+      })
+    }
+  }, [cards])
 
   const deleteCard = useCallback((id: string) => {
     setCards((prev) => prev.filter((card) => card.id !== id))
@@ -387,21 +430,28 @@ export function useFinanceStore() {
 
   const updateTransaction = useCallback(
     (id: string, updates: Partial<Transaction>) => {
+      const finalUpdates = { ...updates }
+
       setTransactions((prev) =>
         prev.map((tx) => {
           if (tx.id !== id) return tx
           const merged = { ...tx, ...updates }
-          if (merged.paymentMethod === 'credit_card' && merged.creditCardId && updates.date) {
+
+          // Se a data de vencimento foi informada explicitamente, respeita a escolha do usuário
+          if (updates.dueDate) {
+            merged.dueDate = updates.dueDate
+          } else if (merged.paymentMethod === 'credit_card' && merged.creditCardId && updates.date) {
             const card = cards.find((c) => c.id === merged.creditCardId)
             if (card) {
               const { dueDate } = calculateInvoiceDueDate(updates.date, card.closingDay, card.dueDay)
               merged.dueDate = dueDate
+              finalUpdates.dueDate = dueDate
             }
           }
           return merged
         })
       )
-      updateTransactionInSupabase(id, updates)
+      updateTransactionInSupabase(id, finalUpdates)
     },
     [cards]
   )

@@ -150,7 +150,12 @@ export function ManageTransactionModal({
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-200/60 dark:border-zinc-800/80 text-[11px]">
             <div className="flex items-center gap-1.5 text-zinc-500">
               <Calendar className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-              <span>Data: <strong className="text-zinc-800 dark:text-zinc-200">{formatDateBR(transaction.date)}</strong></span>
+              <span>{isCard ? 'Compra:' : 'Data:'} <strong className="text-zinc-800 dark:text-zinc-200">{formatDateBR(transaction.date)}</strong></span>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-zinc-500">
+              <Clock className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+              <span>{isCard ? 'Fatura:' : 'Vencimento:'} <strong className="text-zinc-800 dark:text-zinc-200">{formatDateBR(transaction.dueDate)}</strong></span>
             </div>
 
             <div className="flex items-center gap-1.5 text-zinc-500">
@@ -172,16 +177,16 @@ export function ManageTransactionModal({
               )}
             </div>
 
-            <div className="flex items-center gap-1.5 text-zinc-500">
+            <div className="flex items-center gap-1.5 text-zinc-500 col-span-2 pt-1 border-t border-zinc-200/40 dark:border-zinc-800/40">
               {isPaid ? (
                 <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Liquidado</span>
+                  <span>Liquidado / Pago</span>
                 </span>
               ) : (
                 <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold">
                   <Clock className="w-3.5 h-3.5" />
-                  <span>Pendente</span>
+                  <span>Pendente (Comprometido até {formatDateBR(transaction.dueDate)})</span>
                 </span>
               )}
             </div>

@@ -49,8 +49,9 @@ export function NewCardModal({
   const [lastFourDigits, setLastFourDigits] = useState('')
   const [colorScheme, setColorScheme] = useState<CardColorScheme>('gold')
   const [creditLimit, setCreditLimit] = useState<string>('18000')
-  const [closingDay, setClosingDay] = useState<number>(18)
-  const [dueDay, setDueDay] = useState<number>(25)
+  const [closingDay, setClosingDay] = useState<number | string>(18)
+  const [dueDay, setDueDay] = useState<number | string>(25)
+  const [hasCustomizedDates, setHasCustomizedDates] = useState(false)
   const [notes, setNotes] = useState('')
 
   useEffect(() => {
@@ -63,6 +64,7 @@ export function NewCardModal({
       setCreditLimit(editCard.creditLimit.toString())
       setClosingDay(editCard.closingDay)
       setDueDay(editCard.dueDay)
+      setHasCustomizedDates(true)
       setNotes(editCard.notes || '')
       setSearchQuery(editCard.name)
     } else {
@@ -74,6 +76,7 @@ export function NewCardModal({
       setCreditLimit('18000')
       setClosingDay(18)
       setDueDay(25)
+      setHasCustomizedDates(false)
       setNotes('')
       setSearchQuery('')
     }
@@ -107,6 +110,7 @@ export function NewCardModal({
     setCreditLimit(preset.defaultLimit.toString())
     setClosingDay(preset.closingDay)
     setDueDay(preset.dueDay)
+    setHasCustomizedDates(false)
     if (preset.notes) {
       setNotes(preset.notes)
     }
@@ -120,8 +124,8 @@ export function NewCardModal({
     setSearchQuery(val)
     setShowSuggestions(true)
 
-    // Se o usuário estiver digitando (ao menos 3 letras), autodetecta banco, bandeira e detalhes conhecidos
-    if (val.trim().length >= 3) {
+    // Se o usuário estiver criando novo cartão e ainda não customizou datas, autodetecta dados sugeridos
+    if (!editCard && !hasCustomizedDates && val.trim().length >= 3) {
       const detected = autoDetectCardPreset(val)
       if (detected) {
         setBank(detected.bank)
@@ -137,6 +141,8 @@ export function NewCardModal({
   }
 
   const numLimit = parseFloat(creditLimit) || 0
+  const parsedClosingDay = Math.min(31, Math.max(1, Number(closingDay) || 10))
+  const parsedDueDay = Math.min(31, Math.max(1, Number(dueDay) || 17))
 
   // Resultados da busca com filtro de banco e classe
   const searchResults = searchCardPresets(searchQuery, selectedBankFilter).filter((item) => {
@@ -153,8 +159,8 @@ export function NewCardModal({
     lastFourDigits: lastFourDigits.padStart(4, '0') || '0000',
     colorScheme,
     creditLimit: numLimit,
-    closingDay,
-    dueDay,
+    closingDay: parsedClosingDay,
+    dueDay: parsedDueDay,
     createdAt: new Date().toISOString(),
   }
 
@@ -169,8 +175,8 @@ export function NewCardModal({
       lastFourDigits: lastFourDigits.replace(/\D/g, '').slice(-4) || '1234',
       colorScheme,
       creditLimit: numLimit,
-      closingDay: Number(closingDay),
-      dueDay: Number(dueDay),
+      closingDay: parsedClosingDay,
+      dueDay: parsedDueDay,
       notes: notes.trim() || undefined,
     }
 
@@ -503,11 +509,20 @@ export function NewCardModal({
                 max={31}
                 required
                 value={closingDay}
-                onChange={(e) => setClosingDay(Number(e.target.value))}
+                onChange={(e) => {
+                  setHasCustomizedDates(true)
+                  const v = e.target.value
+                  if (v === '') {
+                    setClosingDay('')
+                  } else {
+                    const parsed = parseInt(v, 10)
+                    setClosingDay(isNaN(parsed) ? '' : Math.min(31, Math.max(1, parsed)))
+                  }
+                }}
                 className="w-full bg-zinc-50 dark:bg-zinc-950 font-mono-numbers text-xs text-zinc-900 dark:text-white px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
               />
               <span className="text-[10px] text-zinc-500 mt-0.5 block">
-                Melhor dia para compra: dia {closingDay === 31 ? 1 : closingDay + 1}
+                Melhor dia para compra: dia {parsedClosingDay === 31 ? 1 : parsedClosingDay + 1}
               </span>
             </div>
 
@@ -521,11 +536,20 @@ export function NewCardModal({
                 max={31}
                 required
                 value={dueDay}
-                onChange={(e) => setDueDay(Number(e.target.value))}
+                onChange={(e) => {
+                  setHasCustomizedDates(true)
+                  const v = e.target.value
+                  if (v === '') {
+                    setDueDay('')
+                  } else {
+                    const parsed = parseInt(v, 10)
+                    setDueDay(isNaN(parsed) ? '' : Math.min(31, Math.max(1, parsed)))
+                  }
+                }}
                 className="w-full bg-zinc-50 dark:bg-zinc-950 font-mono-numbers text-xs text-zinc-900 dark:text-white px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
               />
               <span className="text-[10px] text-zinc-500 mt-0.5 block">
-                Prazo: fatura fecha {(dueDay - closingDay + 30) % 30 || 7} dias antes
+                Prazo: fatura fecha {(parsedDueDay - parsedClosingDay + 30) % 30 || 7} dias antes
               </span>
             </div>
           </div>
