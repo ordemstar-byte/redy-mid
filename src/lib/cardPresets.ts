@@ -507,6 +507,20 @@ export const CARD_PRESETS_CATALOG: CardPresetItem[] = [
     keywords: ['picpay', 'black', 'pickpay', 'mastercard black', 'cashback'],
     notes: '1.2% de cashback em dinheiro na carteira e salas VIP LoungeKey',
   },
+  {
+    id: 'picpay-card-epic',
+    name: 'PicPay Card Black Epic Mastercard',
+    bank: 'PicPay',
+    brand: 'mastercard',
+    tier: 'premium',
+    tierLabel: 'Alta Renda / Epic Black',
+    colorScheme: 'black',
+    defaultLimit: 50000,
+    closingDay: 10,
+    dueDay: 17,
+    keywords: ['picpay', 'epic', 'black epic', 'picpay epic', 'mastercard black', 'pickpay', 'cashback', 'loungekey', 'alta renda'],
+    notes: '1.3% cashback nacional e 4% internacional (102% CDI), Sala VIP GRU ilimitada, 2 LoungeKey e Amazon Prime inclusa',
+  },
 
   // ==========================================================================
   // 5. SANTANDER
