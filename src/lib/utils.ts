@@ -72,6 +72,58 @@ export function formatMonthYearHeader(yearMonth: string): string {
 }
 
 /**
+ * Retorna o mês e ano formatados em português a partir de qualquer data ISO (YYYY-MM-DD ou YYYY-MM)
+ */
+export function formatMonthYearFromDate(isoDate: string, short = false): string {
+  if (!isoDate) return ''
+  const parts = isoDate.split('-').map(Number)
+  if (parts.length < 2) return ''
+  const [year, month] = parts
+  const d = new Date(year, month - 1, 1)
+  if (short) {
+    const monthShort = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')
+    return `${monthShort.charAt(0).toUpperCase() + monthShort.slice(1)}/${year}`
+  }
+  const monthName = d.toLocaleDateString('pt-BR', { month: 'long' })
+  return `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} de ${year}`
+}
+
+/**
+ * Calcula o mês e ano em que uma compra parcelada irá terminar
+ */
+export function calculateInstallmentEndDate(
+  currentDueDate: string,
+  totalInstallments: number,
+  currentInstallmentNumber = 1
+): { endDueDate: string; endMonthYearText: string; endMonthYearShort: string } {
+  if (!currentDueDate || totalInstallments <= 1) {
+    const text = formatMonthYearFromDate(currentDueDate)
+    const shortText = formatMonthYearFromDate(currentDueDate, true)
+    return { endDueDate: currentDueDate, endMonthYearText: text, endMonthYearShort: shortText }
+  }
+
+  const [year, month, day] = currentDueDate.split('-').map(Number)
+  const remainingSteps = Math.max(0, totalInstallments - currentInstallmentNumber)
+
+  let endMonth = month + remainingSteps
+  let endYear = year
+  while (endMonth > 12) {
+    endMonth -= 12
+    endYear += 1
+  }
+
+  const daysInEndMonth = new Date(endYear, endMonth, 0).getDate()
+  const clampedDay = Math.min(day || 1, daysInEndMonth)
+  const endDueDate = `${endYear}-${String(endMonth).padStart(2, '0')}-${String(clampedDay).padStart(2, '0')}`
+
+  return {
+    endDueDate,
+    endMonthYearText: formatMonthYearFromDate(endDueDate),
+    endMonthYearShort: formatMonthYearFromDate(endDueDate, true),
+  }
+}
+
+/**
  * Calcula a data de vencimento da fatura para uma compra realizada em determinada data
  */
 export function calculateInvoiceDueDate(

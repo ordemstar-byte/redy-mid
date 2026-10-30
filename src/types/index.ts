@@ -130,6 +130,8 @@ export interface ActiveInstallment {
   installmentAmount: number
   remainingAmount: number
   nextDueDate: string
+  endDueDate: string // YYYY-MM-DD da última parcela
+  endMonthYear: string // Nome por extenso do mês e ano em que acaba (ex: "Janeiro de 2027")
   category: string
 }
 

@@ -1,6 +1,12 @@
 import { useMemo } from 'react'
 import type { CreditCard, Transaction, CardsMetricsSummary, CardInvoice, ActiveInstallment } from '../types'
-import { getBestPurchaseDay, getDaysUntilClosing, getInvoiceCycleDates } from '../lib/utils'
+import {
+  getBestPurchaseDay,
+  getDaysUntilClosing,
+  getInvoiceCycleDates,
+  calculateInstallmentEndDate,
+  formatMonthYearFromDate,
+} from '../lib/utils'
 
 interface UseCreditCardsProps {
   cards: CreditCard[]
@@ -181,6 +187,12 @@ export function useCreditCards({ cards, transactions }: UseCreditCardsProps) {
         let current = parentMap.get(key)
         
         if (!current) {
+          const computedEnd = calculateInstallmentEndDate(
+            tx.dueDate || tx.date,
+            tx.installmentsTotal || 1,
+            tx.installmentNumber || 1
+          )
+
           current = {
             parentInstallmentId: key,
             sampleTransaction: tx,
@@ -195,12 +207,20 @@ export function useCreditCards({ cards, transactions }: UseCreditCardsProps) {
             installmentAmount: tx.amount,
             remainingAmount: 0,
             nextDueDate: tx.dueDate,
+            endDueDate: computedEnd.endDueDate,
+            endMonthYear: computedEnd.endMonthYearText,
             category: tx.category,
           }
           parentMap.set(key, current)
         }
 
         current.allTransactions.push(tx)
+
+        // Se houver uma parcela cadastrada com vencimento posterior, atualiza a data final real
+        if (tx.dueDate && tx.dueDate > current.endDueDate) {
+          current.endDueDate = tx.dueDate
+          current.endMonthYear = formatMonthYearFromDate(tx.dueDate)
+        }
 
         if (tx.status === 'paid') {
           current.paidInstallments += 1

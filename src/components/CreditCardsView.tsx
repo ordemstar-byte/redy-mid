@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import type { DetailedCard } from '../hooks/useCreditCards'
 import type { CardsMetricsSummary, Transaction, CreditCard, ActiveInstallment } from '../types'
 import { CreditCardVisual } from './CreditCardVisual'
-import { formatCurrency, formatDateBR, formatMonthYearHeader } from '../lib/utils'
+import { formatCurrency, formatDateBR, formatMonthYearHeader, calculateInstallmentEndDate } from '../lib/utils'
 import {
   CreditCard as CreditCardIcon,
   Calendar,
@@ -497,8 +497,10 @@ export function CreditCardsView({
                           <span>•</span>
                           <span>Compra: {formatDateBR(tx.date)}{tx.time ? ` às ${tx.time}` : ''}</span>
                           {tx.installmentsTotal && tx.installmentsTotal > 1 && (
-                            <span className="px-1.5 py-0.2 rounded bg-purple-100 dark:bg-purple-500/10 text-purple-700 dark:text-purple-300 font-mono-numbers text-[10px]">
-                              Parcela {tx.installmentNumber} de {tx.installmentsTotal}
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-purple-100 dark:bg-purple-500/10 text-purple-700 dark:text-purple-300 font-mono-numbers text-[10px]">
+                              <span>Parcela {tx.installmentNumber} de {tx.installmentsTotal}</span>
+                              <span>•</span>
+                              <span>Acaba em {calculateInstallmentEndDate(tx.dueDate, tx.installmentsTotal, tx.installmentNumber).endMonthYearShort}</span>
                             </span>
                           )}
                         </div>
@@ -692,6 +694,17 @@ export function CreditCardsView({
                       }}
                     />
                   </div>
+                </div>
+
+                {/* Destaque visual: Quando o parcelamento irá acabar (mês e ano) */}
+                <div className="p-2.5 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-800/60 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5 text-purple-950 dark:text-purple-200">
+                    <Calendar className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
+                    <span>Acaba em: <strong className="font-bold underline decoration-purple-400 decoration-2">{inst.endMonthYear}</strong></span>
+                  </div>
+                  <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-md bg-purple-200/70 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200">
+                    {inst.remainingInstallments === 0 ? 'Liquidado' : `Faltam ${inst.remainingInstallments} fatura${inst.remainingInstallments > 1 ? 's' : ''}`}
+                  </span>
                 </div>
 
                 <div className="flex items-center justify-between text-[10px] text-zinc-400 pt-1 border-t border-zinc-200/80 dark:border-zinc-800/60">

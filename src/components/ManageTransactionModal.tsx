@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Transaction, CreditCard, BankAccount } from '../types'
-import { formatCurrency, formatDateBR } from '../lib/utils'
+import { formatCurrency, formatDateBR, calculateInstallmentEndDate } from '../lib/utils'
 import {
   X,
   Edit3,
@@ -194,6 +194,24 @@ export function ManageTransactionModal({
               )}
             </div>
           </div>
+
+          {/* Destaque de Término do Parcelamento */}
+          {transaction.installmentsTotal && transaction.installmentsTotal > 1 && (
+            <div className="p-3 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-800/60 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2 text-purple-950 dark:text-purple-200">
+                <Calendar className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
+                <div>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-purple-600 dark:text-purple-400 block">Término do Parcelamento</span>
+                  <span>Acaba em: <strong className="font-bold underline decoration-purple-400 decoration-2">{calculateInstallmentEndDate(transaction.dueDate, transaction.installmentsTotal, transaction.installmentNumber).endMonthYearText}</strong></span>
+                </div>
+              </div>
+              <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-md bg-purple-200/70 dark:bg-purple-900/60 text-purple-900 dark:text-purple-200">
+                {transaction.installmentsTotal - (transaction.installmentNumber || 1) === 0
+                  ? 'Última parcela!'
+                  : `Faltam ${transaction.installmentsTotal - (transaction.installmentNumber || 1)} parcelas`}
+              </span>
+            </div>
+          )}
 
           {transaction.notes && (
             <p className="text-[11px] text-zinc-500 dark:text-zinc-400 pt-1 italic border-t border-zinc-200/40 dark:border-zinc-800/40">

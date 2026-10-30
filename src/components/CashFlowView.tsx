@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef } from 'react'
 import type { Transaction, CashFlowSummary, CashFlowDay, CreditCard } from '../types'
-import { formatCurrency, formatDateBR } from '../lib/utils'
+import { formatCurrency, formatDateBR, calculateInstallmentEndDate } from '../lib/utils'
 import { CashFlowChart } from './CashFlowChart'
 import {
   TrendingUp,
@@ -418,7 +418,10 @@ export function CashFlowView({
                         </span>
                         {tx.installmentsTotal && tx.installmentsTotal > 1 && (
                           <div className="text-[10px] font-normal text-zinc-400">
-                            {tx.installmentNumber}/{tx.installmentsTotal}x
+                            <span>{tx.installmentNumber}/{tx.installmentsTotal}x</span>
+                            <span className="block text-[9px] text-purple-600 dark:text-purple-400 font-medium">
+                              até {calculateInstallmentEndDate(tx.dueDate || tx.date, tx.installmentsTotal, tx.installmentNumber || 1).endMonthYearShort}
+                            </span>
                           </div>
                         )}
                       </td>
@@ -552,7 +555,10 @@ export function CashFlowView({
                       </div>
                       {tx.installmentsTotal && tx.installmentsTotal > 1 && (
                         <div className="text-[9px] text-zinc-400 font-mono-numbers">
-                          {tx.installmentNumber}/{tx.installmentsTotal}x
+                          <span>{tx.installmentNumber}/{tx.installmentsTotal}x</span>
+                          <span className="block text-[8px] text-purple-600 dark:text-purple-400 font-medium">
+                            até {calculateInstallmentEndDate(tx.dueDate || tx.date, tx.installmentsTotal, tx.installmentNumber || 1).endMonthYearShort}
+                          </span>
                         </div>
                       )}
                     </div>

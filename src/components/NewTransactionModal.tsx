@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { CreditCard, BankAccount, Transaction, TransactionType, PaymentMethod, CategoryGroup } from '../types'
 import { DEFAULT_CATEGORIES } from '../lib/constants'
-import { calculateInvoiceDueDate, formatCurrency } from '../lib/utils'
+import { calculateInvoiceDueDate, formatCurrency, calculateInstallmentEndDate } from '../lib/utils'
 import { X, CreditCard as CreditCardIcon, Plus, DollarSign, Landmark, Save, Trash2, Sparkles, Calendar } from 'lucide-react'
 
 interface NewTransactionModalProps {
@@ -410,6 +410,22 @@ export function NewTransactionModal({
                       Gerar automaticamente todas as {installmentsTotal} parcelas nas faturas seguintes
                     </label>
                   </div>
+
+                  {/* Previsão de Término */}
+                  {(() => {
+                    const endInfo = calculateInstallmentEndDate(dueDate || date, installmentsTotal, 1)
+                    return (
+                      <div className="p-2.5 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 flex items-center justify-between text-xs text-purple-900 dark:text-purple-200">
+                        <div className="flex items-center gap-1.5 font-medium">
+                          <Calendar className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
+                          <span>Previsão de Término: <strong>{endInfo.endMonthYearText}</strong></span>
+                        </div>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-200/60 dark:bg-purple-900/60 font-semibold text-purple-800 dark:text-purple-300">
+                          {installmentsTotal} faturas
+                        </span>
+                      </div>
+                    )
+                  })()}
 
                   {date < todayStr && (
                     <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 text-[11px] text-purple-900 dark:text-purple-300 flex items-start gap-2">
