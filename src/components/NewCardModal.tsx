@@ -5,15 +5,25 @@ import {
   type CardPresetItem,
 } from '../lib/cardPresets'
 import { CreditCardVisual } from './CreditCardVisual'
-import { X, Plus, Sparkles, Search, Check, Layers } from 'lucide-react'
+import { X, Plus, Sparkles, Search, Check, Layers, Trash2 } from 'lucide-react'
 
 interface NewCardModalProps {
   isOpen: boolean
   onClose: () => void
   onSave: (card: Omit<CreditCard, 'id' | 'createdAt'>) => void
+  editCard?: CreditCard | null
+  onUpdate?: (id: string, updates: Partial<CreditCard>) => void
+  onDelete?: (id: string) => void
 }
 
-export function NewCardModal({ isOpen, onClose, onSave }: NewCardModalProps) {
+export function NewCardModal({
+  isOpen,
+  onClose,
+  onSave,
+  editCard = null,
+  onUpdate,
+  onDelete,
+}: NewCardModalProps) {
   const [name, setName] = useState('')
   const [bank, setBank] = useState('Banco Safra')
   const [brand, setBrand] = useState<CardBrand>('visa')
@@ -23,6 +33,32 @@ export function NewCardModal({ isOpen, onClose, onSave }: NewCardModalProps) {
   const [closingDay, setClosingDay] = useState<number>(18)
   const [dueDay, setDueDay] = useState<number>(25)
   const [notes, setNotes] = useState('')
+
+  useEffect(() => {
+    if (editCard) {
+      setName(editCard.name)
+      setBank(editCard.bank)
+      setBrand(editCard.brand)
+      setLastFourDigits(editCard.lastFourDigits || '')
+      setColorScheme(editCard.colorScheme)
+      setCreditLimit(editCard.creditLimit.toString())
+      setClosingDay(editCard.closingDay)
+      setDueDay(editCard.dueDay)
+      setNotes(editCard.notes || '')
+      setSearchQuery(editCard.name)
+    } else {
+      setName('')
+      setBank('Banco Safra')
+      setBrand('visa')
+      setLastFourDigits('')
+      setColorScheme('gold')
+      setCreditLimit('18000')
+      setClosingDay(18)
+      setDueDay(25)
+      setNotes('')
+      setSearchQuery('')
+    }
+  }, [editCard, isOpen])
 
   // Estado da busca e autocomplete
   const [searchQuery, setSearchQuery] = useState('')
@@ -167,7 +203,7 @@ export function NewCardModal({ isOpen, onClose, onSave }: NewCardModalProps) {
     e.preventDefault()
     if (!name.trim() || numLimit <= 0) return
 
-    onSave({
+    const payload = {
       name: name.trim(),
       bank: bank.trim(),
       brand,
@@ -177,7 +213,13 @@ export function NewCardModal({ isOpen, onClose, onSave }: NewCardModalProps) {
       closingDay: Number(closingDay),
       dueDay: Number(dueDay),
       notes: notes.trim() || undefined,
-    })
+    }
+
+    if (editCard && onUpdate) {
+      onUpdate(editCard.id, payload)
+    } else {
+      onSave(payload)
+    }
 
     onClose()
   }
@@ -201,9 +243,11 @@ export function NewCardModal({ isOpen, onClose, onSave }: NewCardModalProps) {
         {/* Header fixo */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
           <div>
-            <h2 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-white">Cadastrar Novo Cartão</h2>
+            <h2 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-white">
+              {editCard ? 'Editar Cartão de Crédito' : 'Cadastrar Novo Cartão'}
+            </h2>
             <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-              Busca inteligente com cartões de todas as faixas (básicos, sem anuidade, intermediários e alta renda)
+              {editCard ? 'Altere as informações de limite, vencimento e aparência do cartão' : 'Busca inteligente com cartões de todas as faixas (básicos, sem anuidade, intermediários e alta renda)'}
             </p>
           </div>
           <button
@@ -517,21 +561,39 @@ export function NewCardModal({ isOpen, onClose, onSave }: NewCardModalProps) {
           </div>
 
           {/* Ações */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-200 dark:border-zinc-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-1.5"
-            >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span>Salvar Cartão</span>
-            </button>
+          <div className="flex items-center justify-between gap-3 pt-3 border-t border-zinc-200 dark:border-zinc-800">
+            {editCard && onDelete ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm(`Deseja realmente excluir o cartão ${editCard.name}?`)) {
+                    onDelete(editCard.id)
+                    onClose()
+                  }
+                }}
+                className="px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Excluir</span>
+              </button>
+            ) : <div />}
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4 stroke-[2.5]" />
+                <span>{editCard ? 'Salvar Alterações' : 'Salvar Cartão'}</span>
+              </button>
+            </div>
           </div>
 
         </form>

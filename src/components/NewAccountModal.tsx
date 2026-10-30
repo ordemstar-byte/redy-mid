@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { BankAccount, AccountType } from '../types'
 import { BANK_PRESETS, getBankBranding, type BankBrandConfig } from '../lib/bankBranding'
 import { BankAccountVisual } from './BankAccountVisual'
-import { X, Plus, Landmark, Sparkles, Palette, RotateCcw } from 'lucide-react'
+import { X, Plus, Landmark, Sparkles, Palette, RotateCcw, Trash2 } from 'lucide-react'
 
 interface NewAccountModalProps {
   isOpen: boolean
   onClose: () => void
   onSave: (account: Omit<BankAccount, 'id' | 'createdAt'>) => void
+  editAccount?: BankAccount | null
+  onUpdate?: (id: string, updates: Partial<BankAccount>) => void
+  onDelete?: (id: string) => void
 }
 
 const COLOR_SWATCHES = [
@@ -23,7 +26,14 @@ const COLOR_SWATCHES = [
   { name: 'Chama Laranja', hex: '#9A3412' },
 ]
 
-export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProps) {
+export function NewAccountModal({
+  isOpen,
+  onClose,
+  onSave,
+  editAccount = null,
+  onUpdate,
+  onDelete,
+}: NewAccountModalProps) {
   const [name, setName] = useState('')
   const [bank, setBank] = useState('Banco Safra')
   const [accountType, setAccountType] = useState<AccountType>('checking')
@@ -34,6 +44,30 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
   const [accountNumber, setAccountNumber] = useState('')
   const [notes, setNotes] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'bank' | 'gateway'>('all')
+
+  useEffect(() => {
+    if (editAccount) {
+      setName(editAccount.name)
+      setBank(editAccount.bank)
+      setAccountType(editAccount.accountType)
+      setInitialBalance(editAccount.initialBalance.toString())
+      setColor(editAccount.color)
+      setCustomBgColor(editAccount.customBgColor)
+      setAgency(editAccount.agency || '')
+      setAccountNumber(editAccount.accountNumber || '')
+      setNotes(editAccount.notes || '')
+    } else {
+      setName('')
+      setBank('Banco Safra')
+      setAccountType('checking')
+      setInitialBalance('5000')
+      setColor('#C5A059')
+      setCustomBgColor(undefined)
+      setAgency('')
+      setAccountNumber('')
+      setNotes('')
+    }
+  }, [editAccount, isOpen])
 
   if (!isOpen) return null
 
@@ -68,7 +102,7 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
     e.preventDefault()
     if (!name.trim()) return
 
-    onSave({
+    const payload = {
       name: name.trim(),
       bank: bank.trim(),
       accountType,
@@ -78,7 +112,13 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
       agency: agency.trim() || undefined,
       accountNumber: accountNumber.trim() || undefined,
       notes: notes.trim() || undefined,
-    })
+    }
+
+    if (editAccount && onUpdate) {
+      onUpdate(editAccount.id, payload)
+    } else {
+      onSave(payload)
+    }
 
     onClose()
   }
@@ -104,9 +144,11 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
               <Landmark className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-white">Cadastrar Conta Bancária</h2>
+              <h2 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-white">
+                {editAccount ? 'Editar Conta Bancária' : 'Cadastrar Conta Bancária'}
+              </h2>
               <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                Design oficial automático para Bancos, Safra, Ton, Cakto e Gateways
+                {editAccount ? 'Altere as informações cadastrais e visuais da instituição' : 'Design oficial automático para Bancos, Safra, Ton, Cakto e Gateways'}
               </p>
             </div>
           </div>
@@ -375,21 +417,39 @@ export function NewAccountModal({ isOpen, onClose, onSave }: NewAccountModalProp
           </div>
 
           {/* Botões de Ação fixos no rodapé */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-200 dark:border-zinc-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-1.5"
-            >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span>Salvar Conta</span>
-            </button>
+          <div className="flex items-center justify-between gap-3 pt-3 border-t border-zinc-200 dark:border-zinc-800">
+            {editAccount && onDelete ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm(`Deseja realmente excluir a conta ${editAccount.name}?`)) {
+                    onDelete(editAccount.id)
+                    onClose()
+                  }
+                }}
+                className="px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Excluir</span>
+              </button>
+            ) : <div />}
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-xs font-medium text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4 stroke-[2.5]" />
+                <span>{editAccount ? 'Salvar Alterações' : 'Salvar Conta'}</span>
+              </button>
+            </div>
           </div>
 
         </form>

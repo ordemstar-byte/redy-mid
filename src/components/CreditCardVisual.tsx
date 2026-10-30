@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import type { CreditCard, CardColorScheme } from '../types'
 import { formatCurrency } from '../lib/utils'
 import { Wifi } from 'lucide-react'
@@ -8,6 +9,7 @@ interface CreditCardVisualProps {
   privacyMode?: boolean
   isSelected?: boolean
   onClick?: () => void
+  onTripleClick?: (card: CreditCard) => void
   showDetails?: boolean
 }
 
@@ -17,6 +19,7 @@ export function CreditCardVisual({
   privacyMode = false,
   isSelected = false,
   onClick,
+  onTripleClick,
   showDetails = true,
 }: CreditCardVisualProps) {
   const availableLimit = Math.max(0, card.creditLimit - usedLimit)
@@ -57,9 +60,36 @@ export function CreditCardVisual({
 
   const currentStyle = colorStyles[card.colorScheme] || colorStyles.black
 
+  const clickCountRef = useRef(0)
+  const lastClickTimeRef = useRef(0)
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    const now = Date.now()
+    const diff = now - lastClickTimeRef.current
+    if (diff < 500) {
+      clickCountRef.current += 1
+    } else {
+      clickCountRef.current = 1
+    }
+    lastClickTimeRef.current = now
+
+    if (clickCountRef.current >= 3 || e.detail >= 3) {
+      clickCountRef.current = 0
+      if (onTripleClick) {
+        onTripleClick(card)
+        return
+      }
+    }
+
+    if (onClick) {
+      onClick()
+    }
+  }
+
   return (
     <div
-      onClick={onClick}
+      onClick={handleCardClick}
+      title="Clique para selecionar • 3 cliques para editar ou excluir"
       className={`relative w-full aspect-[1.586/1] max-w-[380px] rounded-2xl p-5 text-white transition-all duration-300 cursor-pointer overflow-hidden select-none ${
         currentStyle.cardClass
       } ${currentStyle.border} ${

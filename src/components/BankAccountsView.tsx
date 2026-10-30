@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { DetailedBankAccount, Transaction } from '../types'
+import type { DetailedBankAccount, Transaction, BankAccount } from '../types'
 import { formatCurrency, formatDateBR } from '../lib/utils'
 import { BankAccountVisual } from './BankAccountVisual'
 import {
@@ -12,6 +12,7 @@ import {
   Clock,
   Sparkles,
   TrendingUp,
+  Edit3,
 } from 'lucide-react'
 
 interface BankAccountsViewProps {
@@ -28,6 +29,8 @@ interface BankAccountsViewProps {
   privacyMode: boolean
   onOpenNewAccount: () => void
   onOpenNewTransaction: () => void
+  onEditAccount?: (account: BankAccount) => void
+  onManageAccount?: (account: BankAccount) => void
   onDeleteAccount: (id: string) => void
   onDeleteTransaction: (id: string) => void
   onToggleStatus: (id: string) => void
@@ -40,6 +43,8 @@ export function BankAccountsView({
   privacyMode,
   onOpenNewAccount,
   onOpenNewTransaction,
+  onEditAccount,
+  onManageAccount,
   onDeleteAccount,
   onDeleteTransaction,
   onToggleStatus,
@@ -185,6 +190,9 @@ export function BankAccountsView({
               privacyMode={privacyMode}
               isSelected={activeAccount?.id === account.id}
               onClick={() => setSelectedAccountId(account.id)}
+              onTripleClick={() => {
+                if (onManageAccount) onManageAccount(account)
+              }}
             />
           ))}
         </div>
@@ -219,6 +227,16 @@ export function BankAccountsView({
                 <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>+ Lançamento Nesta Conta</span>
               </button>
+
+              {onEditAccount && (
+                <button
+                  onClick={() => onEditAccount(activeAccount)}
+                  className="p-2 rounded-xl text-zinc-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                  title="Editar esta conta (ou clique 3x no cartão)"
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
+              )}
 
               <button
                 onClick={() => {

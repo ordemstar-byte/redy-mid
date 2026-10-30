@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { BankAccount, CreditCard } from './types'
 import { useFinanceStore } from './hooks/useFinanceStore'
 import { useCashFlow } from './hooks/useCashFlow'
 import { useCreditCards } from './hooks/useCreditCards'
@@ -11,6 +12,7 @@ import { PlanningView } from './components/PlanningView'
 import { NewTransactionModal } from './components/NewTransactionModal'
 import { NewCardModal } from './components/NewCardModal'
 import { NewAccountModal } from './components/NewAccountModal'
+import { ManageEntityModal } from './components/ManageEntityModal'
 import { PinLockScreen } from './components/PinLockScreen'
 import { BottomNavBar } from './components/BottomNavBar'
 
@@ -31,8 +33,10 @@ export function App() {
     activeTab,
     setActiveTab,
     addAccount,
+    updateAccount,
     deleteAccount,
     addCard,
+    updateCard,
     deleteCard,
     addTransaction,
     deleteTransaction,
@@ -64,6 +68,13 @@ export function App() {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   const [isCardModalOpen, setIsCardModalOpen] = useState(false)
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false)
+  
+  // Gerenciamento e Edição (3 Cliques ou Ações Rápidas)
+  const [managingAccount, setManagingAccount] = useState<BankAccount | null>(null)
+  const [managingCard, setManagingCard] = useState<CreditCard | null>(null)
+  const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null)
+  const [editingCard, setEditingCard] = useState<CreditCard | null>(null)
+
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   // Autenticação com Senha PIN (0638)
@@ -165,7 +176,17 @@ export function App() {
             transactions={transactions}
             summary={accountsSummary}
             privacyMode={privacyMode}
-            onOpenNewAccount={() => setIsAccountModalOpen(true)}
+            onOpenNewAccount={() => {
+              setEditingAccount(null)
+              setIsAccountModalOpen(true)
+            }}
+            onEditAccount={(acc) => {
+              setEditingAccount(acc)
+              setIsAccountModalOpen(true)
+            }}
+            onManageAccount={(acc) => {
+              setManagingAccount(acc)
+            }}
             onOpenNewTransaction={() => setIsTransactionModalOpen(true)}
             onDeleteAccount={(accId) => {
               deleteAccount(accId)
@@ -182,7 +203,17 @@ export function App() {
             summary={cardsSummary}
             activeInstallmentsList={activeInstallmentsList}
             privacyMode={privacyMode}
-            onOpenNewCard={() => setIsCardModalOpen(true)}
+            onOpenNewCard={() => {
+              setEditingCard(null)
+              setIsCardModalOpen(true)
+            }}
+            onEditCard={(card) => {
+              setEditingCard(card)
+              setIsCardModalOpen(true)
+            }}
+            onManageCard={(card) => {
+              setManagingCard(card)
+            }}
             onOpenNewTransaction={() => setIsTransactionModalOpen(true)}
             onPayInvoice={(cardId, invTxs) => {
               payCardInvoice(cardId, invTxs)
@@ -237,19 +268,83 @@ export function App() {
 
       <NewCardModal
         isOpen={isCardModalOpen}
-        onClose={() => setIsCardModalOpen(false)}
+        onClose={() => {
+          setIsCardModalOpen(false)
+          setEditingCard(null)
+        }}
+        editCard={editingCard}
         onSave={(cardData) => {
           addCard(cardData)
           showToast(`Cartão ${cardData.name} cadastrado com sucesso!`)
+        }}
+        onUpdate={(cardId, updates) => {
+          updateCard(cardId, updates)
+          showToast(`Cartão atualizado com sucesso!`)
+        }}
+        onDelete={(cardId) => {
+          deleteCard(cardId)
+          showToast(`Cartão excluído com sucesso.`)
         }}
       />
 
       <NewAccountModal
         isOpen={isAccountModalOpen}
-        onClose={() => setIsAccountModalOpen(false)}
+        onClose={() => {
+          setIsAccountModalOpen(false)
+          setEditingAccount(null)
+        }}
+        editAccount={editingAccount}
         onSave={(accountData) => {
           addAccount(accountData)
           showToast(`Conta ${accountData.name} cadastrada com sucesso!`)
+        }}
+        onUpdate={(accId, updates) => {
+          updateAccount(accId, updates)
+          showToast(`Conta atualizada com sucesso!`)
+        }}
+        onDelete={(accId) => {
+          deleteAccount(accId)
+          showToast(`Conta excluída com sucesso.`)
+        }}
+      />
+
+      {/* Modal de Gestão Rápida (3 Cliques) para Contas */}
+      <ManageEntityModal
+        isOpen={Boolean(managingAccount)}
+        onClose={() => setManagingAccount(null)}
+        type="account"
+        entity={managingAccount}
+        onEdit={() => {
+          if (managingAccount) {
+            setEditingAccount(managingAccount)
+            setIsAccountModalOpen(true)
+          }
+        }}
+        onDelete={() => {
+          if (managingAccount) {
+            deleteAccount(managingAccount.id)
+            showToast(`Conta ${managingAccount.name} excluída com sucesso.`)
+          }
+        }}
+      />
+
+      {/* Modal de Gestão Rápida (3 Cliques) para Cartões */}
+      <ManageEntityModal
+        isOpen={Boolean(managingCard)}
+        onClose={() => setManagingCard(null)}
+        type="card"
+        entity={managingCard}
+        onEdit={() => {
+          if (managingCard) {
+            setEditingCard(managingCard)
+            setIsCardModalOpen(true)
+          }
+        }}
+        onDelete={() => {
+          if (managingCard) {
+            deleteCard(managingCard.id)
+            showToast(`Cartão ${managingCard.name} excluído com sucesso.`)
+          }
         }}
       />
 

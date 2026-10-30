@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { DetailedCard } from '../hooks/useCreditCards'
-import type { CardsMetricsSummary, Transaction } from '../types'
+import type { CardsMetricsSummary, Transaction, CreditCard } from '../types'
 import { CreditCardVisual } from './CreditCardVisual'
 import { formatCurrency, formatDateBR, formatMonthYearHeader } from '../lib/utils'
 import {
@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Trash2,
   Clock,
+  Edit3,
 } from 'lucide-react'
 
 interface CreditCardsViewProps {
@@ -33,6 +34,8 @@ interface CreditCardsViewProps {
   privacyMode: boolean
   onOpenNewCard: () => void
   onOpenNewTransaction: () => void
+  onEditCard?: (card: CreditCard) => void
+  onManageCard?: (card: CreditCard) => void
   onPayInvoice: (cardId: string, invoiceTransactions: Transaction[]) => void
   onDeleteCard: (cardId: string) => void
   onDeleteTransaction: (id: string) => void
@@ -45,6 +48,8 @@ export function CreditCardsView({
   privacyMode,
   onOpenNewCard,
   onOpenNewTransaction,
+  onEditCard,
+  onManageCard,
   onPayInvoice,
   onDeleteCard,
   onDeleteTransaction,
@@ -182,6 +187,9 @@ export function CreditCardsView({
                   setSelectedCardId(card.id)
                   setSelectedInvoiceMonth('')
                 }}
+                onTripleClick={() => {
+                  if (onManageCard) onManageCard(card)
+                }}
               />
               
               {/* Micro badge under card */}
@@ -238,18 +246,29 @@ export function CreditCardsView({
               </div>
             </div>
 
-            {/* Delete Card Button */}
-            <button
-              onClick={() => {
-                if (confirm(`Deseja realmente remover o cartão ${activeCard.name}?`)) {
-                  onDeleteCard(activeCard.id)
-                }
-              }}
-              className="self-end md:self-auto p-2 rounded-xl text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
-              title="Excluir este cartão"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            {/* Edit & Delete Card Actions */}
+            <div className="flex items-center gap-1.5 self-end md:self-auto">
+              {onEditCard && (
+                <button
+                  onClick={() => onEditCard(activeCard)}
+                  className="p-2 rounded-xl text-zinc-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                  title="Editar este cartão (ou clique 3x no cartão)"
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  if (confirm(`Deseja realmente remover o cartão ${activeCard.name}?`)) {
+                    onDeleteCard(activeCard.id)
+                  }
+                }}
+                className="p-2 rounded-xl text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                title="Excluir este cartão"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {/* Invoice Month Selector & Status */}

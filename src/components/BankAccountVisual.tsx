@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import type { BankAccount, AccountType } from '../types'
 import { getBankBranding } from '../lib/bankBranding'
 import { formatCurrency } from '../lib/utils'
@@ -8,6 +9,7 @@ interface BankAccountVisualProps {
   privacyMode?: boolean
   isSelected?: boolean
   onClick?: () => void
+  onTripleClick?: (account: BankAccount) => void
 }
 
 const accountTypeLabels: Record<AccountType, string> = {
@@ -22,14 +24,42 @@ export function BankAccountVisual({
   privacyMode = false,
   isSelected = false,
   onClick,
+  onTripleClick,
 }: BankAccountVisualProps) {
   const brand = getBankBranding(account.bank)
   const balance = account.currentBalance ?? account.initialBalance
   const hasCustomBg = Boolean(account.customBgColor)
 
+  const clickCountRef = useRef(0)
+  const lastClickTimeRef = useRef(0)
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    const now = Date.now()
+    const diff = now - lastClickTimeRef.current
+    if (diff < 500) {
+      clickCountRef.current += 1
+    } else {
+      clickCountRef.current = 1
+    }
+    lastClickTimeRef.current = now
+
+    if (clickCountRef.current >= 3 || e.detail >= 3) {
+      clickCountRef.current = 0
+      if (onTripleClick) {
+        onTripleClick(account)
+        return
+      }
+    }
+
+    if (onClick) {
+      onClick()
+    }
+  }
+
   return (
     <div
-      onClick={onClick}
+      onClick={handleCardClick}
+      title="Clique para selecionar • 3 cliques para editar ou excluir"
       className={`relative w-full rounded-2xl p-5 text-white transition-all duration-300 cursor-pointer overflow-hidden select-none border shadow-lg ${
         hasCustomBg ? 'border-white/15' : brand.bgClass
       } ${
