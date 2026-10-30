@@ -276,7 +276,7 @@ export function NewCardModal({
                 value={name}
                 onFocus={() => setShowSuggestions(true)}
                 onChange={(e) => handleNameInput(e.target.value)}
-                placeholder="Ex: Itaú Click, Bradesco Neo, PicPay Card, Safra Infinite, Santander SX..."
+                placeholder="Ex: Bradesco Visa Platinum, Amazon Prime, PicPay Epic, Itaú Click, Safra Infinite..."
                 className="w-full bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-white pl-9 pr-8 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs"
               />
               {name && (
