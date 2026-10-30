@@ -453,9 +453,29 @@ export function useFinanceStore() {
         fetchCardsFromSupabase(),
         fetchTransactionsFromSupabase(),
       ])
-      setAccounts(remoteAccounts)
-      setCards(remoteCards)
-      setTransactions(remoteTxs)
+      if (remoteAccounts.length > 0) setAccounts(remoteAccounts)
+      if (remoteCards.length > 0) setCards(remoteCards)
+      
+      if (remoteTxs.length > 0) {
+        setTransactions(remoteTxs)
+      } else {
+        try {
+          const localSaved = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS)
+          if (localSaved) {
+            const parsed = JSON.parse(localSaved)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setTransactions(parsed)
+              saveTransactionsBatchToSupabase(parsed)
+            } else {
+              setTransactions([])
+            }
+          } else {
+            setTransactions([])
+          }
+        } catch {
+          setTransactions([])
+        }
+      }
       setIsCloudConnected(true)
     } catch (e) {
       console.error('Erro ao recarregar do Supabase:', e)
