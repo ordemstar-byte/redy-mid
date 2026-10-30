@@ -65,26 +65,18 @@ export function CreditCardsView({
     }
   }
 
-  const clickTrackers = useRef<Map<string, { count: number; time: number }>>(new Map())
+  const clickTimestamps = useRef<Map<string, number[]>>(new Map())
 
   const handleTxRowClick = (e: React.MouseEvent, tx: Transaction) => {
     if ((e.target as HTMLElement).closest('button')) return
 
     const now = Date.now()
-    const tracker = clickTrackers.current.get(tx.id) || { count: 0, time: 0 }
-    const diff = now - tracker.time
+    const list = (clickTimestamps.current.get(tx.id) || []).filter((t) => now - t < 1500)
+    list.push(now)
+    clickTimestamps.current.set(tx.id, list)
 
-    if (diff < 800) {
-      tracker.count += 1
-    } else {
-      tracker.count = 1
-    }
-    tracker.time = now
-    clickTrackers.current.set(tx.id, tracker)
-
-    if (tracker.count >= 3 || e.detail >= 3) {
-      tracker.count = 0
-      clickTrackers.current.set(tx.id, tracker)
+    if (list.length >= 3 || e.detail >= 3) {
+      clickTimestamps.current.set(tx.id, [])
       if (onManageTransaction) {
         onManageTransaction(tx)
       } else if (onEditTransaction) {
@@ -96,25 +88,21 @@ export function CreditCardsView({
   const handleInstallmentCardClick = (e: React.MouseEvent, inst: ActiveInstallment) => {
     if ((e.target as HTMLElement).closest('button')) return
 
+    const key = inst.parentInstallmentId || inst.sampleTransaction?.id || 'inst'
     const now = Date.now()
-    const tracker = clickTrackers.current.get(inst.parentInstallmentId) || { count: 0, time: 0 }
-    const diff = now - tracker.time
+    const list = (clickTimestamps.current.get(key) || []).filter((t) => now - t < 1500)
+    list.push(now)
+    clickTimestamps.current.set(key, list)
 
-    if (diff < 800) {
-      tracker.count += 1
-    } else {
-      tracker.count = 1
-    }
-    tracker.time = now
-    clickTrackers.current.set(inst.parentInstallmentId, tracker)
-
-    if (tracker.count >= 3 || e.detail >= 3) {
-      tracker.count = 0
-      clickTrackers.current.set(inst.parentInstallmentId, tracker)
-      if (onManageTransaction && inst.sampleTransaction) {
-        onManageTransaction(inst.sampleTransaction)
-      } else if (onEditTransaction && inst.sampleTransaction) {
-        onEditTransaction(inst.sampleTransaction)
+    if (list.length >= 3 || e.detail >= 3) {
+      clickTimestamps.current.set(key, [])
+      const targetTx = inst.sampleTransaction || inst.allTransactions[0]
+      if (targetTx) {
+        if (onManageTransaction) {
+          onManageTransaction(targetTx)
+        } else if (onEditTransaction) {
+          onEditTransaction(targetTx)
+        }
       }
     }
   }
@@ -122,13 +110,8 @@ export function CreditCardsView({
   // Garante que haja um cartão selecionado
   const activeCard = detailedCards.find((c) => c.id === selectedCardId) || detailedCards[0]
 
-  // Seleção de fatura do cartão ativo (atual por padrão)
-  const [selectedInvoiceMonth, setSelectedInvoiceMonth] = useState<string>('')
-
-  const currentInvoiceMonth = activeCard?.currentInvoice.monthYear
-  const activeInvoice = activeCard?.allInvoices.find(
-    (inv) => inv.monthYear === (selectedInvoiceMonth || currentInvoiceMonth)
-  ) || activeCard?.currentInvoice
+  // Fatura atual do cartão ativo
+  const activeInvoice = activeCard?.currentInvoice
 
   if (detailedCards.length === 0) {
     return (
@@ -284,7 +267,6 @@ export function CreditCardsView({
                   isSelected={isSelected}
                   onClick={() => {
                     setSelectedCardId(card.id)
-                    setSelectedInvoiceMonth('')
                   }}
                   onTripleClick={() => {
                     if (onManageCard) onManageCard(card)
@@ -371,37 +353,19 @@ export function CreditCardsView({
             </div>
           </div>
 
-          {/* Invoice Month Selector & Status */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            
-            {/* Months Tabs */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-              {activeCard.allInvoices.map((inv) => {
-                const isSelected = (activeInvoice?.monthYear || currentInvoiceMonth) === inv.monthYear
-                return (
-                  <button
-                    key={inv.monthYear}
-                    onClick={() => setSelectedInvoiceMonth(inv.monthYear)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all whitespace-nowrap border shadow-sm ${
-                      isSelected
-                        ? 'bg-zinc-900 dark:bg-zinc-800 text-white border-zinc-900 dark:border-zinc-700'
-                        : 'bg-zinc-50 dark:bg-zinc-900/60 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800/80 hover:text-zinc-900 dark:hover:text-zinc-200'
-                    }`}
-                  >
-                    <span>{formatMonthYearHeader(inv.monthYear)}</span>
-                    <span className="ml-1.5 font-mono-numbers text-[11px] opacity-80">
-                      ({formatCurrency(inv.totalAmount, privacyMode)})
-                    </span>
-                  </button>
-                )
-              })}
+          {/* Card Invoice Action Bar (Apenas o botão de adicionar nova compra no cartão) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                Fatura Atual: <strong className="text-zinc-900 dark:text-zinc-100">{formatMonthYearHeader(activeCard.currentInvoice.monthYear)}</strong>
+              </span>
             </div>
 
-            {/* Actions: Pay Invoice & Add Purchase to this card */}
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={onOpenNewTransaction}
-                className="px-3.5 py-2 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-700 dark:text-purple-300 hover:bg-purple-500/25 transition-all text-xs font-semibold flex items-center gap-1.5 shrink-0"
+                className="px-3.5 py-2 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-700 dark:text-purple-300 hover:bg-purple-500/25 transition-all text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer shadow-xs active:scale-95"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>+ Compra no Cartão</span>
@@ -409,15 +373,15 @@ export function CreditCardsView({
 
               {activeInvoice && activeInvoice.transactions.length > 0 && activeInvoice.status !== 'paid' && (
                 <button
+                  type="button"
                   onClick={() => onPayInvoice(activeCard.id, activeInvoice.transactions)}
-                  className="px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all text-xs font-semibold flex items-center gap-2 shrink-0"
+                  className="px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all text-xs font-semibold flex items-center gap-2 shrink-0 cursor-pointer shadow-xs active:scale-95"
                 >
                   <CheckCircle className="w-4 h-4" />
                   <span>Pagar Fatura</span>
                 </button>
               )}
             </div>
-
           </div>
 
           {/* Current Invoice Header Summary */}
@@ -570,7 +534,7 @@ export function CreditCardsView({
               Radar de Compras Parceladas Ativas
             </h3>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Acompanhe o comprometimento futuro da sua renda mês a mês
+              Acompanhe o comprometimento futuro da sua renda mês a mês (toque 3x para editar ou excluir)
             </p>
           </div>
           <span className="text-xs font-mono-numbers text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900 px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-800">
@@ -588,8 +552,8 @@ export function CreditCardsView({
               <div
                 key={inst.parentInstallmentId || idx}
                 onClick={(e) => handleInstallmentCardClick(e, inst)}
-                title="Clique 3 vezes para gerenciar este parcelamento"
-                className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800/90 hover:border-purple-300 dark:hover:border-purple-700/60 transition-all space-y-3 shadow-sm cursor-pointer group select-none relative"
+                title="Clique 3 vezes para abrir o menu de editar ou excluir este parcelamento"
+                className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800/90 hover:border-purple-400 dark:hover:border-purple-600 transition-all space-y-3 shadow-sm cursor-pointer group select-none relative active:scale-[0.99]"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -614,13 +578,13 @@ export function CreditCardsView({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation()
-                        if (onManageTransaction && inst.sampleTransaction) {
-                          onManageTransaction(inst.sampleTransaction)
-                        } else if (onEditTransaction && inst.sampleTransaction) {
-                          onEditTransaction(inst.sampleTransaction)
+                        const targetTx = inst.sampleTransaction || inst.allTransactions[0]
+                        if (targetTx) {
+                          if (onManageTransaction) onManageTransaction(targetTx)
+                          else if (onEditTransaction) onEditTransaction(targetTx)
                         }
                       }}
-                      className="p-1 rounded-lg text-zinc-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors cursor-pointer"
+                      className="p-1.5 rounded-lg text-zinc-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors cursor-pointer"
                       title="Gerenciar / Editar este parcelamento"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
@@ -629,10 +593,15 @@ export function CreditCardsView({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation()
-                        setConfirmDeleteSeriesId(inst.parentInstallmentId)
+                        const targetTx = inst.sampleTransaction || inst.allTransactions[0]
+                        if (targetTx && onManageTransaction) {
+                          onManageTransaction(targetTx)
+                        } else {
+                          setConfirmDeleteSeriesId(inst.parentInstallmentId)
+                        }
                       }}
-                      className="p-1 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
-                      title="Excluir parcelamento completo"
+                      className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer"
+                      title="Excluir ou gerenciar este parcelamento"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -709,9 +678,10 @@ export function CreditCardsView({
 
                 <div className="flex items-center justify-between text-[10px] text-zinc-400 pt-1 border-t border-zinc-200/80 dark:border-zinc-800/60">
                   <span>Próximo vencimento: {formatDateBR(inst.nextDueDate)}</span>
-                  <span className="flex items-center gap-1">
-                    <span className="hidden sm:inline text-purple-600 dark:text-purple-400 font-medium">3 toques para gerenciar •</span>
-                    <span>{inst.remainingInstallments} parcelas pendentes</span>
+                  <span className="flex items-center gap-1 font-medium text-purple-600 dark:text-purple-400">
+                    <span>3 toques: editar ou excluir</span>
+                    <span className="text-zinc-300 dark:text-zinc-700">•</span>
+                    <span>{inst.remainingInstallments} faturas</span>
                   </span>
                 </div>
               </div>

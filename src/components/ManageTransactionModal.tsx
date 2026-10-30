@@ -46,7 +46,7 @@ export function ManageTransactionModal({
   const card = isCard ? cards.find((c) => c.id === transaction.creditCardId) : null
   const account = !isCard && transaction.bankAccountId ? accounts.find((a) => a.id === transaction.bankAccountId) : null
   const isPaid = transaction.status === 'paid'
-  const isInstallmentSeries = Boolean((transaction.installmentsTotal || 1) > 1 && transaction.parentInstallmentId)
+  const isInstallmentSeries = Boolean((transaction.installmentsTotal || 1) > 1)
 
   const handleDeleteSingle = () => {
     onDelete(transaction.id, false)

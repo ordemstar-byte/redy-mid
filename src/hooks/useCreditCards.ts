@@ -181,8 +181,8 @@ export function useCreditCards({ cards, transactions }: UseCreditCardsProps) {
     const parentMap = new Map<string, ActiveInstallment>()
 
     cardTransactions.forEach((tx) => {
-      if ((tx.installmentsTotal || 1) > 1 && tx.parentInstallmentId) {
-        const key = tx.parentInstallmentId
+      if ((tx.installmentsTotal || 1) > 1) {
+        const key = tx.parentInstallmentId || tx.id
         const card = cards.find((c) => c.id === tx.creditCardId)
         let current = parentMap.get(key)
         

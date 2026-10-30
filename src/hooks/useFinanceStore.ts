@@ -502,10 +502,23 @@ export function useFinanceStore() {
   const deleteTransaction = useCallback((id: string, deleteSeries = false) => {
     setTransactions((prev) => {
       const target = prev.find((tx) => tx.id === id)
-      if (deleteSeries && target?.parentInstallmentId) {
+      if (!target) return prev
+
+      if (deleteSeries) {
         const pId = target.parentInstallmentId
-        deleteInstallmentSeriesFromSupabase(pId)
-        return prev.filter((tx) => tx.parentInstallmentId !== pId)
+        if (pId) {
+          deleteInstallmentSeriesFromSupabase(pId)
+          return prev.filter((tx) => tx.parentInstallmentId !== pId)
+        }
+        // Fallback: se não tiver parentInstallmentId, remove pelo cartão e descrição base
+        const baseDesc = target.description.replace(/\s\(\d+\/\d+x\)/, '').trim()
+        const related = prev.filter(
+          (tx) =>
+            tx.creditCardId === target.creditCardId &&
+            tx.description.replace(/\s\(\d+\/\d+x\)/, '').trim() === baseDesc
+        )
+        related.forEach((r) => deleteTransactionFromSupabase(r.id))
+        return prev.filter((tx) => !related.some((r) => r.id === tx.id))
       } else {
         deleteTransactionFromSupabase(id)
         return prev.filter((tx) => tx.id !== id)
