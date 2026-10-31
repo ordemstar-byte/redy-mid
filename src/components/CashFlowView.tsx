@@ -110,6 +110,23 @@ export function CashFlowView({
     })
   }, [transactions, searchTerm, typeFilter, statusFilter])
 
+  // Totais contabilizados das transações da tabela
+  const tableTotals = useMemo(() => {
+    let incomeTotal = 0
+    let expenseTotal = 0
+
+    filteredTransactions.forEach((tx) => {
+      if (tx.type === 'income') {
+        incomeTotal += tx.amount
+      } else {
+        expenseTotal += tx.amount
+      }
+    })
+
+    const netTotal = incomeTotal - expenseTotal
+    return { incomeTotal, expenseTotal, netTotal }
+  }, [filteredTransactions])
+
   // Alerta de Liquidez Crítica
   const hasNegativeBalanceDay = timeline.some((d) => !d.isPastOrToday && d.projectedBalance < 0)
 
@@ -130,11 +147,13 @@ export function CashFlowView({
       {/* KPI Cards Grid (Responsive 2x2 on mobile, 4-col on desktop) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         
-        {/* Card 1: Saldo Disponível Hoje */}
+        {/* Card 1: Realizado no Período / Saldo em Caixa */}
         <div className="rounded-2xl p-3.5 sm:p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/90 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:border-zinc-300 dark:hover:border-zinc-700/80 transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-xs mb-1.5 sm:mb-2">
-              <span className="font-medium truncate">Saldo em Caixa</span>
+              <span className="font-medium truncate">
+                {period === 'all' ? 'Saldo em Caixa' : 'Realizado no Período'}
+              </span>
               <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                 <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               </div>
@@ -142,19 +161,15 @@ export function CashFlowView({
             <div className={`text-lg sm:text-2xl font-bold tracking-tight font-mono-numbers truncate ${
               summary.realizedBalance >= 0 ? 'text-zinc-900 dark:text-white' : 'text-rose-600 dark:text-rose-400'
             }`}>
-              {formatCurrency(summary.realizedBalance, privacyMode)}
+              {summary.realizedBalance >= 0 ? '+' : ''}{formatCurrency(summary.realizedBalance, privacyMode)}
             </div>
           </div>
-          {summary.pastPaidInstallmentsCount && summary.pastPaidInstallmentsCount > 0 ? (
-            <div className="mt-2 text-[10px] text-purple-600 dark:text-purple-400 font-medium truncate" title={`Inclui ${summary.pastPaidInstallmentsCount} parcelas pagas anteriores somando ${formatCurrency(summary.pastPaidInstallmentsTotal || 0, privacyMode)}`}>
-              <span>Inclui {summary.pastPaidInstallmentsCount} parcelas pagas ({formatCurrency(summary.pastPaidInstallmentsTotal || 0, privacyMode)})</span>
-            </div>
-          ) : (
-            <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
-              <span className="truncate">Confirmado</span>
-            </div>
-          )}
+          <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+            <span className="truncate">
+              {period === 'all' ? 'Confirmado em contas' : 'Liquidado no período'}
+            </span>
+          </div>
         </div>
 
         {/* Card 2: Entradas no Período */}
@@ -171,7 +186,10 @@ export function CashFlowView({
             </div>
           </div>
           <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 flex justify-between gap-1 truncate">
-            <span>Recebido: <strong className="text-zinc-800 dark:text-zinc-200">{formatCurrency(summary.periodIncomesRealized, privacyMode)}</strong></span>
+            <span>Recebido: <strong className="text-zinc-800 dark:text-zinc-200">+{formatCurrency(summary.periodIncomesRealized, privacyMode)}</strong></span>
+            {summary.periodIncomesPending > 0 && (
+              <span>Previsto: <strong className="text-zinc-800 dark:text-zinc-200">+{formatCurrency(summary.periodIncomesPending, privacyMode)}</strong></span>
+            )}
           </div>
         </div>
 
@@ -189,28 +207,30 @@ export function CashFlowView({
             </div>
           </div>
           <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 flex justify-between gap-1 truncate">
-            <span>Pago: <strong className="text-zinc-800 dark:text-zinc-200">{formatCurrency(summary.periodExpensesRealized, privacyMode)}</strong></span>
-            <span>Pendente: <strong className="text-zinc-800 dark:text-zinc-200">{formatCurrency(summary.periodExpensesPending, privacyMode)}</strong></span>
+            <span>Pago: <strong className="text-zinc-800 dark:text-zinc-200">-{formatCurrency(summary.periodExpensesRealized, privacyMode)}</strong></span>
+            <span>Pendente: <strong className="text-zinc-800 dark:text-zinc-200">-{formatCurrency(summary.periodExpensesPending, privacyMode)}</strong></span>
           </div>
         </div>
 
-        {/* Card 4: Projeção Final de Saldo */}
+        {/* Card 4: Projeção Final de Saldo / Resultado do Período */}
         <div className="rounded-2xl p-3.5 sm:p-5 bg-white dark:bg-zinc-900/70 border border-zinc-200/90 dark:border-zinc-800/80 shadow-sm backdrop-blur-sm relative overflow-hidden group hover:border-emerald-500/40 transition-all flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-[11px] sm:text-xs mb-1.5 sm:mb-2">
-              <span className="font-medium truncate">Saldo Final</span>
+              <span className="font-medium truncate">
+                {period === 'all' ? 'Saldo Projetado' : 'Resultado do Período'}
+              </span>
               <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                 <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </div>
             </div>
             <div className={`text-lg sm:text-2xl font-bold tracking-tight font-mono-numbers truncate ${
-              summary.projectedMonthEndBalance >= 0 ? 'text-zinc-900 dark:text-white' : 'text-rose-600 dark:text-rose-400'
+              (period === 'all' ? summary.projectedMonthEndBalance : summary.netPeriodResult) >= 0 ? 'text-zinc-900 dark:text-white' : 'text-rose-600 dark:text-rose-400'
             }`}>
-              {formatCurrency(summary.projectedMonthEndBalance, privacyMode)}
+              {(period === 'all' ? summary.projectedMonthEndBalance : summary.netPeriodResult) >= 0 ? '+' : ''}{formatCurrency(period === 'all' ? summary.projectedMonthEndBalance : summary.netPeriodResult, privacyMode)}
             </div>
           </div>
           <div className="mt-2 text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center justify-between">
-            <span className="truncate">Líquido: <strong className={summary.netPeriodResult >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
+            <span className="truncate">Líquido do período: <strong className={summary.netPeriodResult >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
               {summary.netPeriodResult >= 0 ? '+' : ''}{formatCurrency(summary.netPeriodResult, privacyMode)}
             </strong></span>
           </div>
@@ -332,12 +352,7 @@ export function CashFlowView({
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
               <span>
-                Exibindo lançamentos de <strong>{period ? periodLabels[period] : 'Mês Atual'}</strong> ({filteredTransactions.length} exibidos). 
-                {summary.pastPaidInstallmentsCount && summary.pastPaidInstallmentsCount > 0 ? (
-                  <> Existem <strong>{allTransactions?.length || totalTransactionsCount} lançamentos</strong> no histórico (incluindo as {summary.pastPaidInstallmentsCount} parcelas de Jan a Set que totalizam {formatCurrency(summary.pastPaidInstallmentsTotal || 0, privacyMode)}).</>
-                ) : (
-                  <> Você possui <strong>{allTransactions?.length || totalTransactionsCount} lançamentos</strong> em outros meses/períodos.</>
-                )}
+                Exibindo lançamentos de <strong>{period ? periodLabels[period] : 'Mês Atual'}</strong> ({filteredTransactions.length} exibidos de {allTransactions?.length || totalTransactionsCount} no histórico total).
               </span>
             </div>
             {(setPeriod || onResetPeriodToAll) && (
@@ -378,7 +393,7 @@ export function CashFlowView({
                     {(allTransactions?.length || totalTransactionsCount || 0) > 0 && (
                       <div className="mt-3 max-w-md mx-auto text-xs text-zinc-500 dark:text-zinc-400 space-y-2">
                         <p>
-                          Você possui <strong>{allTransactions?.length || totalTransactionsCount} lançamentos</strong> no histórico (como as parcelas de compras iniciadas em meses anteriores).
+                          Você possui <strong>{allTransactions?.length || totalTransactionsCount} lançamentos</strong> cadastrados em outros períodos do histórico.
                         </p>
                         {(setPeriod || onResetPeriodToAll) && (
                           <button
@@ -536,6 +551,30 @@ export function CashFlowView({
                 })
               )}
             </tbody>
+            {filteredTransactions.length > 0 && (
+              <tfoot className="border-t-2 border-zinc-200 dark:border-zinc-800 bg-zinc-50/90 dark:bg-zinc-950/60 font-semibold text-xs">
+                <tr>
+                  <td colSpan={3} className="py-3.5 px-3 text-zinc-600 dark:text-zinc-400">
+                    <span className="font-bold uppercase tracking-wider text-[11px] text-zinc-700 dark:text-zinc-300 mr-2">
+                      Total Contabilizado ({filteredTransactions.length}):
+                    </span>
+                    <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-normal">
+                      Entradas: <strong className="text-emerald-600 dark:text-emerald-400 font-mono-numbers">+{formatCurrency(tableTotals.incomeTotal, privacyMode)}</strong> • 
+                      Saídas: <strong className="text-rose-600 dark:text-rose-400 font-mono-numbers">-{formatCurrency(tableTotals.expenseTotal, privacyMode)}</strong>
+                    </span>
+                  </td>
+                  <td className="py-3.5 px-3 text-right text-zinc-500 dark:text-zinc-400 text-[11px]">
+                    Resultado Líquido:
+                  </td>
+                  <td className={`py-3.5 px-3 text-right font-mono-numbers font-bold text-sm ${
+                    tableTotals.netTotal >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                  }`}>
+                    {tableTotals.netTotal >= 0 ? '+' : ''}{formatCurrency(tableTotals.netTotal, privacyMode)}
+                  </td>
+                  <td className="py-3.5 px-3"></td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
 
@@ -676,6 +715,26 @@ export function CashFlowView({
                 </div>
               )
             })
+          )}
+          {filteredTransactions.length > 0 && (
+            <div className="mt-3 p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60 flex items-center justify-between text-xs">
+              <div>
+                <span className="text-[11px] font-bold text-zinc-600 dark:text-zinc-300 block uppercase tracking-wider">
+                  Total Contabilizado ({filteredTransactions.length})
+                </span>
+                <span className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                  Entradas: +{formatCurrency(tableTotals.incomeTotal, privacyMode)} | Saídas: -{formatCurrency(tableTotals.expenseTotal, privacyMode)}
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] text-zinc-400 block">Resultado:</span>
+                <span className={`font-mono-numbers font-bold text-sm ${
+                  tableTotals.netTotal >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                }`}>
+                  {tableTotals.netTotal >= 0 ? '+' : ''}{formatCurrency(tableTotals.netTotal, privacyMode)}
+                </span>
+              </div>
+            </div>
           )}
         </div>
 

@@ -56,8 +56,8 @@ export function useCashFlow({ transactions, period, accounts }: UseCashFlowProps
     return (accounts || []).reduce((sum, a) => sum + (a.initialBalance || 0), 0)
   }, [accounts])
 
-  // Saldo Realizado Histórico Total (Dinheiro líquido em conta hoje)
-  const realizedBalance = useMemo(() => {
+  // Saldo Realizado Histórico Total (Dinheiro líquido em conta hoje de todo o histórico)
+  const historicalRealizedBalance = useMemo(() => {
     return transactions.reduce((acc, tx) => {
       if (tx.status !== 'paid') return acc
       return tx.type === 'income' ? acc + tx.amount : acc - tx.amount
@@ -91,18 +91,20 @@ export function useCashFlow({ transactions, period, accounts }: UseCashFlowProps
     const totalExpenses = periodExpensesRealized + periodExpensesPending
     const netPeriodResult = totalIncomes - totalExpenses
 
-    // Projeção: Saldo Realizado Atual + o que vai entrar pendente no período - o que vai sair pendente no período
-    const projectedMonthEndBalance = realizedBalance + periodIncomesPending - periodExpensesPending
+    // Contabiliza apenas o que pertence ao período selecionado!
+    // Se for 'all', usa o saldo consolidado histórico total.
+    // Se for um recorte específico (ex: Mês Atual), calcula estritamente o realizado do período selecionado.
+    const isAllHistory = period === 'all'
+    const realizedBalance = isAllHistory
+      ? historicalRealizedBalance
+      : periodIncomesRealized - periodExpensesRealized
+
+    const projectedMonthEndBalance = isAllHistory
+      ? historicalRealizedBalance + periodIncomesPending - periodExpensesPending
+      : netPeriodResult
 
     const savingsRatePercentage =
       totalIncomes > 0 ? Math.max(0, (netPeriodResult / totalIncomes) * 100) : 0
-
-    // Contabiliza parcelas anteriores de compras parceladas que já foram pagas
-    const pastPaidInstallments = transactions.filter(
-      (tx) => tx.status === 'paid' && (tx.installmentsTotal || 1) > 1 && tx.paymentMethod === 'credit_card'
-    )
-    const pastPaidInstallmentsTotal = pastPaidInstallments.reduce((sum, tx) => sum + tx.amount, 0)
-    const pastPaidInstallmentsCount = pastPaidInstallments.length
 
     return {
       realizedBalance,
@@ -115,11 +117,9 @@ export function useCashFlow({ transactions, period, accounts }: UseCashFlowProps
       totalExpenses,
       netPeriodResult,
       savingsRatePercentage,
-      pastPaidInstallmentsTotal,
-      pastPaidInstallmentsCount,
       accountsInitialBalance,
     }
-  }, [periodTransactions, realizedBalance, transactions, accountsInitialBalance])
+  }, [periodTransactions, period, historicalRealizedBalance, accountsInitialBalance])
 
   // Linha do tempo diária do fluxo de caixa
   const dailyTimeline: CashFlowDay[] = useMemo(() => {
@@ -149,7 +149,8 @@ export function useCashFlow({ transactions, period, accounts }: UseCashFlowProps
     })
 
     // Calcula saldo acumulado dia a dia
-    let runningBalance = realizedBalance
+    // Se o período for restrito (ex: Mês Atual), o acumulado inicia em 0 e reflete apenas o fluxo do período selecionado!
+    let runningBalance = period === 'all' ? historicalRealizedBalance : 0
     const timeline: CashFlowDay[] = []
 
     // Ordena as chaves de data
@@ -157,13 +158,7 @@ export function useCashFlow({ transactions, period, accounts }: UseCashFlowProps
     for (const date of sortedDates) {
       const data = map.get(date)!
       const net = data.incomes - data.expenses
-      // Atualiza projeção apenas se for dia futuro ou no próprio dia
-      if (date >= todayStr) {
-        // adiciona apenas transações pendentes para não duplicar com realizedBalance
-        const pendingIn = data.transactions.filter(t => t.type === 'income' && t.status === 'pending').reduce((s, t) => s + t.amount, 0)
-        const pendingOut = data.transactions.filter(t => t.type === 'expense' && t.status === 'pending').reduce((s, t) => s + t.amount, 0)
-        runningBalance += (pendingIn - pendingOut)
-      }
+      runningBalance += net
 
       timeline.push({
         date,
@@ -177,7 +172,7 @@ export function useCashFlow({ transactions, period, accounts }: UseCashFlowProps
     }
 
     return timeline
-  }, [dateRange, periodTransactions, realizedBalance])
+  }, [dateRange, periodTransactions, period, historicalRealizedBalance])
 
   // Distribuição de Despesas por Categoria
   const categoryBreakdown = useMemo(() => {
