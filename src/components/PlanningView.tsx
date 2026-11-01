@@ -346,7 +346,7 @@ export function PlanningView({
                   <div
                     className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-75"
                     style={{
-                      width: `${Math.min(100, Math.max(0, ((simInstallments - 1) / 23) * 100))}%`,
+                      width: `${Math.min(100, Math.max(0, ((simInstallments - 1) / 98) * 100))}%`,
                     }}
                   />
                 </div>
@@ -354,7 +354,7 @@ export function PlanningView({
                 <input
                   type="range"
                   min={1}
-                  max={24}
+                  max={99}
                   step={1}
                   value={simInstallments}
                   onChange={(e) => setSimInstallments(Number(e.target.value))}
@@ -364,16 +364,16 @@ export function PlanningView({
 
               {/* Marcadores de Parcelas */}
               <div className="flex justify-between text-[10px] text-zinc-400 dark:text-zinc-500 font-mono-numbers px-0.5">
-                <span className={simInstallments === 1 ? 'text-emerald-500 font-bold' : ''}>1x (À vista)</span>
-                <span className={simInstallments === 6 ? 'text-emerald-500 font-bold' : ''}>6x</span>
+                <span className={simInstallments === 1 ? 'text-emerald-500 font-bold' : ''}>1x</span>
                 <span className={simInstallments === 12 ? 'text-emerald-500 font-bold' : ''}>12x</span>
-                <span className={simInstallments === 18 ? 'text-emerald-500 font-bold' : ''}>18x</span>
                 <span className={simInstallments === 24 ? 'text-emerald-500 font-bold' : ''}>24x</span>
+                <span className={simInstallments === 48 ? 'text-emerald-500 font-bold' : ''}>48x</span>
+                <span className={simInstallments === 99 ? 'text-emerald-500 font-bold' : ''}>99x</span>
               </div>
 
-              {/* Pills Rápidas de Parcelas Mais Comuns */}
+              {/* Pills Rápidas de Parcelas */}
               <div className="flex flex-wrap gap-1.5 pt-1">
-                {[1, 2, 3, 6, 8, 10, 12, 18, 24].map((n) => (
+                {[1, 2, 3, 6, 10, 12, 18, 24, 36, 48, 60, 99].map((n) => (
                   <button
                     key={n}
                     type="button"

@@ -387,7 +387,7 @@ export function NewTransactionModal({
                     className="w-full bg-white dark:bg-zinc-900 font-mono-numbers text-xs text-zinc-900 dark:text-zinc-200 px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer"
                   >
                     <option value={1}>1x (À vista na fatura)</option>
-                    {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 18, 24].map((n) => (
+                    {Array.from({ length: 98 }, (_, i) => i + 2).map((n) => (
                       <option key={n} value={n}>
                         {n}x de {formatCurrency(numAmount > 0 ? numAmount / n : 0)}
                       </option>
