@@ -378,21 +378,45 @@ export function NewTransactionModal({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400 mb-1">
-                    Parcelamento
-                  </label>
-                  <select
-                    value={installmentsTotal}
-                    onChange={(e) => setInstallmentsTotal(Number(e.target.value))}
-                    className="w-full bg-white dark:bg-zinc-900 font-mono-numbers text-xs text-zinc-900 dark:text-zinc-200 px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer"
-                  >
-                    <option value={1}>1x (À vista na fatura)</option>
-                    {Array.from({ length: 98 }, (_, i) => i + 2).map((n) => (
-                      <option key={n} value={n}>
-                        {n}x de {formatCurrency(numAmount > 0 ? numAmount / n : 0)}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
+                      Parcelamento (1x a 99x)
+                    </label>
+                    <span className="text-[10px] text-purple-600 dark:text-purple-400 font-mono font-bold">
+                      {installmentsTotal}x {numAmount > 0 ? `(${formatCurrency(numAmount / installmentsTotal)})` : ''}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={installmentsTotal}
+                      onChange={(e) => setInstallmentsTotal(Math.min(99, Math.max(1, Number(e.target.value))))}
+                      className="flex-1 bg-white dark:bg-zinc-900 font-mono-numbers text-xs text-zinc-900 dark:text-zinc-200 px-3 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer"
+                    >
+                      <option value={1}>1x (À vista na fatura)</option>
+                      {Array.from({ length: 98 }, (_, i) => i + 2).map((n) => (
+                        <option key={n} value={n}>
+                          {n}x de {formatCurrency(numAmount > 0 ? numAmount / n : 0)}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex items-center gap-1 w-20 shrink-0">
+                      <input
+                        type="number"
+                        min={1}
+                        max={99}
+                        value={installmentsTotal}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10)
+                          if (!isNaN(val)) {
+                            setInstallmentsTotal(Math.min(99, Math.max(1, val)))
+                          }
+                        }}
+                        className="w-full text-center bg-white dark:bg-zinc-900 font-mono-numbers font-bold text-xs text-zinc-900 dark:text-zinc-200 px-2 py-2 rounded-xl border border-zinc-300 dark:border-zinc-800 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                        title="Digitar quantidade de parcelas (1 a 99)"
+                      />
+                      <span className="text-xs font-bold text-zinc-500">x</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 

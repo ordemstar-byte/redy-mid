@@ -327,12 +327,30 @@ export function Header({
                             onReloadCloud()
                             setShowDataMenu(false)
                           }}
-                          className="mt-2 w-full py-1 rounded bg-zinc-200 dark:bg-zinc-800 hover:bg-emerald-500 hover:text-zinc-950 text-zinc-800 dark:text-zinc-200 text-[10px] font-semibold transition-colors flex items-center justify-center gap-1"
+                          className="mt-2 w-full py-1 rounded bg-zinc-200 dark:bg-zinc-800 hover:bg-emerald-500 hover:text-zinc-950 text-zinc-800 dark:text-zinc-200 text-[10px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer"
                         >
                           <RotateCcw className="w-3 h-3" />
                           Sincronizar com Nuvem Agora
                         </button>
                       )}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowDataMenu(false)
+                          if ('caches' in window) {
+                            caches.keys().then((names) => {
+                              names.forEach((name) => caches.delete(name))
+                            })
+                          }
+                          window.location.reload()
+                        }}
+                        className="mt-1.5 w-full py-1 rounded bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800/80 hover:bg-purple-600 hover:text-white text-purple-700 dark:text-purple-300 text-[10px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                        title="Recarrega a aplicação e limpa caches para baixar a versão mais recente"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        Baixar Versão Recente (Limpar Cache)
+                      </button>
                     </div>
 
                     <div className="border-t border-zinc-200 dark:border-zinc-800 my-1" />
